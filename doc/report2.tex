@@ -525,6 +525,39 @@ rounding up to the nearest byte, total amount of data needed to be sent each
 five minute interval would be five bytes.
 
 
+\section{Simulation Software}
+
+The design of the network will be tested using cooja, which is a simulator for
+contiki nodes. This simulator is compatible with the following platforms: TI
+MSP430x,  TI MSP430x, Atmel AVR, micaz, TI MSP430, TI MSP430 and Native
+
+The number of emulated nodes that that can be simulated using this software
+depends on memory and the application running on nodes. As there is a main
+simulation thread, using more than two cores (one for the simulation and one
+for the rest) gives no significant improvement~\cite{contikidev}.
+
+To simulate the movement of the cows in Cooja, a mobility plugin first has to
+be installed. However, to be able to generate our own specific mobility file,
+another tool like BonnMotion has to be used to make the mobility output format
+compatible with Cooja’s mobility plugin format. We will only be considering
+a few simple mobility models like: the gauss-markov-, the random waypoint- and
+the reference point group mobility models. As simulating a more complex
+mobility patterns of the cows is not the goal of this project.
+
+To provide a reliable transmission range, there is a UDGM (Unit Disk Graph
+Radio Medium) implementation that can be configured to change some parameters
+like transmission range and interference range. Depending on the transmission
+power parameter, the resulting transmission range will
+differ~\cite{contikidev}.
+
+Contiki supports different MAC layers: X-MAC, LLP (Low Power Probing), Simple
+TDMA and nullmac (non-persistent CSMA).  X-MAC and LPP are low power MACs that
+work best under low traffic loads(10).  Furthermore, Contiki supports different
+protocol stacks like uIP which is a very small and fully compliant TCP/IP
+stack. Contiki supports Rime stack which consists of small layers built on top
+of each other and has single and multi-hop broadcast(11).
+
+
 \section{Protocol Stack}
 
 The system will developed for platforms supporting ContikiOs. For the
@@ -568,51 +601,9 @@ mobile nature of our application. The only drawback is the power consumption
 required for continuously listening at regular intervals.  However, since the
 relay nodes and the base station are the only ones that need to receive data,
 only these have to listen, and not the sensor nodes. In view of these
-arguments, the design will use the nonbeacon-enabled mode.
-
-
-
-\section{Network Architecture}
-
-
-\section{Simulation Software}
-
-Compatible Hardware: TI MSP430x,  TI MSP430x, Atmel AVR, micaz, TI MSP430, TI
-MSP430 and Native
-
-Max Number of Nodes: The number of emulated nodes depends on memory and the
-application running on nodes which can also affect simulation speed. As there
-is a main simulation thread, using more than two cores (one for the simulation
-and one for the rest) gives no significant improvement(9).
-
-Transmission power: Max Power of tmote for example is 31. Transmission power
-level can be controlled according to your needs using the function call
-cc2420\_set\_txpower(desired\_power\_level), where desired\_power\_level could be any
-of the following values (in the increasing order of intensity): 3, 7, 11, 15,
-19, 23, 27, 31.
-
-Mobility models Capability: The mobility plugin have to be installed in order
-to be able to use mobility in Cooja. However, to be able to generate our own
-specific mobility file, another tool like BonnMotion have to be used to make
-the mobility output format compatible with Cooja’s mobility plugin format. To
-simulate the movement of the cows, we will only be considering a few simple
-mobility models like: gauss-markov, random waypoint and reference point group
-mobility model. As simulating a more complex mobility patterns of the cows is
-not the goal of this project~\cite{contikidev}.
-
-Simulated Environment Dimensions: To provide a reliable transmission range,
-there is UDGM (Unit Disk Graph Radio Medium) implementation that can be
-configured to change some parameters like transmission range and interference
-range, but also depending on the transmission power parameter, the resulting
-transmission range will differ~\cite{contikidev}.
-
-Support for different Node Types (Relay, data sink, sensors) Cooja supports all
-the different node types like sensors, relays and actuators.  Simply according
-to your definition of each node.
-
-Support for our MAC-layer/ protocol stack
-Contiki supports different MAC layers: X-MAC, LLP (Low Power Probing), Simple TDMA and nullmac (non-persistent CSMA). X-MAC and LPP are low power MACs that work best under low traffic loads(10).
-Furthermore, Contiki supports different protocol stacks like uIP which is a very small and fully compliant TCP/IP stack. Contiki supports also Rime stack which consists of small layers built on top of each other and has single and multi-hop broadcast(11).
+arguments, the design will use the nonbeacon-enabled mode. However, as contiki
+does not implement unslotted CSMA/CA, we will use one of the congestion-based
+MAC layers that contiki provides, in its place.
 
 
 \section{Work Plan}
