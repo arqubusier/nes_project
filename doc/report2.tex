@@ -312,7 +312,7 @@ Omar Elshal\IEEEauthorrefmark{4}}
 Email: h.e.lundkvist@student.tue.nl}
 \IEEEauthorblockA{\IEEEauthorrefmark{2}Student Id: 0975194\\
 Email: a.para@student.tue.nl}
-\IEEEauthorblockA{\IEEEauthorrefmark{3}Student Id: 09xxxxx\\
+\IEEEauthorblockA{\IEEEauthorrefmark{3}Student Id: 0980015\\
 Email: v.mahawar@student.tue.nl}
 \IEEEauthorblockA{\IEEEauthorrefmark{4}Student Id: 0980295\\
 Email: o.a.m.elshal@student.tue.nl}}
@@ -396,7 +396,13 @@ for using relay nodes, is to be able to cover the majority of the field.
 The system will be used both to detect different types of diseases: fever, lameness and mastitis, and to detect if a cow is in estrus.  This can be accomplished by the use accelerometer-, microphone-, and temperature sensors in the sensor nodes~\cite{hese2014}. Every 4 minutes, the sensor nodes will send the acquired data in a processed form to the base station for storage. The base station can analyse the sample values to detect patterns that correspond to different diseases or the onset of estrus.
 
 \subsection{Related Work}
+Wireless livestock monitoring has became a widely researched area in recent years due to the increased availability and lower costs of wireless sensor network technologies. WSN have been utilized in many livestock monitoring applications around the world such as animal localization, behavior analysis, health monitoring or pregnancy detection in cows. Several studies are concentrated to raw data collection~\cite{GU06AN,WA15IN} for later data processing and research. The main drawback of these studies is the high energy consumption of the sensor nodes and thus, the limited time (only a few days at most) these nodes can function. Also the storage and processing of collected data would be a problem in longer term.
 
+Most of the livestock monitoring WSNs are designed for cattles \cite{GU06AN, KU15AZ, SM06AN, SO05AW, MA14CA, HW11DE, WA15IN, KW12PR, PA15SO, NO13WI, HU10ZI, KW09WI} but there are also studies for sheep health and behavior monitoring~\cite{NA12MO} or chicken monitoring for avian influenza surveillance in poultry farms with ultra low power wireless sensor nodes~\cite{OK12DE, OK13DE}. The wireless health monitoring of cows has been one of the most important researched topic among authors. Kumar et al.~\cite{KU15AZ} and Wang et al.~\cite{WA15IN} both developed cattle health monitoring WSNs based on the IEEE~802.15.4 protocol. Hwang et al.~\cite{HW11DE} showed that continuous monitoring and comparison of cattle activity can be used for disease prediction and prevention. In addition to the disease prediction, with continuous monitoring of cows, also the pregnancy detection is possible~\cite{NO13WI}.
+
+Wireless sensor networks can be used for livestock localization indoor~\cite{AS13WI} or outdoor~\cite{PA15SO, HU10ZI}. Panckhurst et al.~\cite{PA15SO} developed a GPS based wireless positioning system, while Huircan et al.~\cite{HU10ZI} demonstrated that the link quality indication (LQI) feature of the ZigBee protocol can also be a candidate for outdoor livestock localization. Livestock positioning can have different purposes around the world, like the prevention of pastureland degradation and desertification in Mongolia~\cite{CH13CL} or cattle rustling prevention in Africa~\cite{MA14CA}.
+
+The ZigBee protocol and a carrier frequency of 2.4 GHz are widely used \cite{KU15AZ, MA14CA, HU10ZI, NA12MO}, however some of the authors \cite{SO05AW, OK12DE, OK13DE, PA15SO} prefered sub-gigahertz carrier frequencies due to the higher communication distance. Sousa Silva et al.~\cite{SO05AW} have demonstrated that a Floating Base Sensor Network (FBSN) is also a feasible solution for data collection in large mobile wireless sensor networks. Kwong et al.~\cite{KW09WI} have analysed the problem of signal penetration through animal's body and they proposed a two antennae scheme for an optimized radio coverage of the cattle's neck collar. In this project we will not consider the interference caused by the body of the cows.
 
 \section{Application Specific Challenges}
 
@@ -415,8 +421,8 @@ The key challenge in any wireless network is the coverage of the all the
 wireless nodes. In the Cattle Monitoring WSN the network architecture should
 account to cover the average size of fields and must be scalable when needed
 accordingly for larger fields. As per now the average size of fields in
-Netherlands is 100,000 square meters and maximum coverage done in Zigbee WSN
-protocol is approx 500m so by using one or two relay nodes the sufficient area
+Netherlands is 100,000 m$^2$ and maximum coverage done in Zigbee WSN
+protocol is approx 500 m so by using one or two relay nodes the sufficient area
 of average cattle field can be covered.
 
 \subsection{Wireless Communication}
@@ -457,10 +463,6 @@ requirement of potentially high number of nodes needed for monitoring an entire
 herd of cattle. Also as the WSN becomes more widespread and general the average
 cost of having a WSN monitoring system will reduce considerably over a period
 of time.  
-
-
-\section{Scope}
-
 
 \section{Requirements}
 
@@ -503,8 +505,8 @@ the amount of data generated by the sensors. Estimating this amount is thus
 also very important. For storing the temperature of the cow after processing
 the raw data from the sensors, one byte is enough to give a reasonable
 resolution. This is because a dairy cow’s normal rectal temperature lies
-between 38.3 and 38.9 $^\circ$C~\cite{wikibov} and one could limiting the
-byte to represent values between 30 and 50 degrees centigrades without losing
+between 38.3$^\circ$C and 38.9$^\circ$C~\cite{wikibov} and one could limiting the
+byte to represent values between 30$^\circ$C and 50$^\circ$C without losing
 any information.  Using the same argumentation, one byte could also be used to
 store the average heart rate, because the normal heart rate for a dairy cow
 lies between 40 and 84 beats per minute~\cite{wikibov}.
@@ -528,8 +530,8 @@ five minute interval would be five bytes.
 \section{Simulation Software}
 
 The design of the network will be tested using cooja, which is a simulator for
-contiki nodes. This simulator is compatible with the following platforms: TI
-MSP430x,  TI MSP430x, Atmel AVR, micaz, TI MSP430, TI MSP430 and Native
+contiki nodes and thus no experiments will be done on real hardware. This simulator is compatible with the following platforms: TI
+MSP430x,  TI MSP430x, Atmel AVR, micaz, TI MSP430 and TI MSP430.
 
 The number of emulated nodes that that can be simulated using this software
 depends on memory and the application running on nodes. As there is a main
@@ -555,7 +557,7 @@ TDMA and nullmac (non-persistent CSMA).  X-MAC and LPP are low power MACs that
 work best under low traffic loads(10).  Furthermore, Contiki supports different
 protocol stacks like uIP which is a very small and fully compliant TCP/IP
 stack. Contiki supports Rime stack which consists of small layers built on top
-of each other and has single and multi-hop broadcast(11).
+of each other and has single and multi-hop broadcast~\cite{coojacrash}.
 
 
 \section{Protocol Stack}
@@ -570,9 +572,9 @@ ContikiOs are deemed unfitting for our application.
 \subsection{Physical Layer}
 
 To mitigate the problems with coverage, tranceivers with carrier frequencies
-between 902 and 928 of the IEEE 802.15.4 standard, will be considered in order
+between 902 MHz and 928 MHz of the IEEE 802.15.4 standard, will be considered in order
 to get an increased range. Even though these frequencies provide a lower
-datarate, of around 40 kbp/s \cite{ieee802154}, it is
+datarate, of around 40 kbps \cite{ieee802154}, it is
 still sufficient for the small amounts of data collected by the sensors.
 Furthermore, the modulation scheme to be used will either be ASK-, BPSK or
 O-QPSK.
@@ -606,7 +608,7 @@ does not implement unslotted CSMA/CA, we will use one of the congestion-based
 MAC layers that contiki provides, in its place.
 
 
-\section{Work Plan}
+%\section{Work Plan}
 
 % An example of a floating figure using the graphicx package.
 % Note that \label must occur AFTER (or within) \caption.
@@ -743,6 +745,57 @@ A. ~Helwatkar, D. ~Riordan and J. ~Walsh,
 \emph{Sensor Technology For Animal Health Monitoring},
 Proceedings of the 8th International Conference on Sensing Technology,
 sep, 2014.
+
+\bibitem{GU06AN}
+Y. Guo, P. Corke, G. Poulton, T. Wark, G. Bishop-Hurley, and D. Swain, \emph{Animal Behaviour Understanding using Wireless Sensor Networks,} in Proceedings 2006 31st IEEE Conference on Local Computer Networks, 2006, pp. 607–614.
+
+\bibitem{SM06AN}
+K. Smith, A. Martinez, R. Craddolph, H. Erickson, D. Andresen, and S. Warren, \emph{An Integrated Cattle Health Monitoring System,} in 28th Annual International Conference of the IEEE Engineering in Medicine and Biology Society, 2006. EMBS ’06, 2006, pp. 4659–4662.
+
+\bibitem{SO05AW}
+A. C. de Sousa Silva, A. I. C. Arce, S. Souto, and E. J. X. Costa, \emph{A wireless floating base sensor network for physiological responses of livestock,} Computers and Electronics in Agriculture, vol. 49, no. 2, pp. 246–254, Nov. 2005.
+
+\bibitem{KU15AZ}
+A. Kumar and G. P. Hancke, \emph{A Zigbee-Based Animal Health Monitoring System,} IEEE Sensors Journal, vol. 15, no. 1, pp. 610–617, Jan. 2015.
+
+\bibitem{MA14CA}
+P. K. Mashoko Nkwari, S. Rimer, and B. S. Paul, \emph{Cattle monitoring system using wireless sensor network in order to prevent cattle rustling,} in IST-Africa Conference Proceedings, 2014, 2014, pp. 1–10.
+
+\bibitem{HW11DE}
+J. Hwang and H. Yoe, \emph{Design and implementation of wireless sensor network based livestock activity monitoring system,} in Future Generation Information Technology, Springer, 2011, pp. 161–168.
+
+\bibitem{WA15IN}
+H. Wang, B. Davies, and A. O. Fapojuwo, \emph{Inter-wireless body area network scheduling algorithm for livestock health monitoring,} in 2015 IEEE Wireless Communications and Networking Conference (WCNC), 2015, pp. 2132–2137.
+
+\bibitem{KW12PR}
+K. H. Kwong, T.-T. Wu, H. G. Goh, K. Sasloglou, B. Stephen, I. Glover, C. Shen, W. Du, C. Michie, and I. Andonovic, \emph{Practical considerations for wireless sensor networks in cattle monitoring applications,} Computers and Electronics in Agriculture, vol. 81, pp. 33–44, Feb. 2012.
+
+\bibitem{PA15SO}
+B. Panckhurst, P. Brown, K. Payne, and T. C. A. Molteno, \emph{Solar-powered sensor for continuous monitoring of livestock position,} in 2015 IEEE Sensors Applications Symposium (SAS), 2015, pp. 1–6.
+
+\bibitem{NO13WI}
+A. H. H. Nograles and F. S. Caluyo, \emph{Wireless system for pregnancy detection in cows by monitoring temperature changes in body,} in 2013 IEEE 9th International Colloquium on Signal Processing and its Applications (CSPA), 2013, pp. 11–16.
+
+\bibitem{HU10ZI}
+J. I. Huircán, C. Muñoz, H. Young, L. Von Dossow, J. Bustos, G. Vivallo, and M. Toneatti, \emph{ZigBee-based wireless sensor network localization for cattle monitoring in grazing fields,} Computers and Electronics in Agriculture, vol. 74, no. 2, pp. 258–264, Nov. 2010.
+
+\bibitem{KW09WI}
+K. H. Kwong, T. T. Wu, H. G. Goh, B. Stephen, M. Gilroy, C. Michie, and I. Andonovic, \emph{Wireless sensor networks in agriculture: cattle monitoring for farming industries,} in Progress In Electromagnetics Research Symposium, 2009, vol. 5, pp. 31–35.
+
+\bibitem{CH13CL}
+S.-G. Choi, E. Norinpel, and J. Yoo, \emph{Cluster-based routing protocol in wireless sensor networks for tracking livestock movements in Mongolian nomadic herding,} in 2013 8th International Forum on Strategic Technology (IFOST), 2013, vol. 2, pp. 163–167.
+
+\bibitem{OK12DE}
+H. Okada, H. Nogami, T. Itoh, and T. Masuda, \emph{Development of Low Power Technologies for Health Monitoring System Using Wireless Sensor Nodes,} in 2012 Second Workshop on Design, Control and Software Implementation for Distributed MEMS (dMEMS), 2012, pp. 90–95.
+
+\bibitem{OK13DE}
+H. Okada, H. Nogami, T. Kobayashi, T. Masuda, and T. Itoh, \emph{Development of ultra low power wireless sensor node with piezoelectric accelerometer for health monitoring,} in 2013 Transducers Eurosensors XXVII: The 17th International Conference on Solid-State Sensors, Actuators and Microsystems (TRANSDUCERS EUROSENSORS XXVII), 2013, pp. 26–29.
+
+\bibitem{NA12MO}
+E. S. Nadimi, R. N. Jørgensen, V. Blanes-Vidal, and S. Christensen, \emph{Monitoring and classifying animal behavior using ZigBee-based mobile ad hoc wireless sensor networks and artificial neural networks,} Computers and Electronics in Agriculture, vol. 82, pp. 44–54, Mar. 2012.
+
+\bibitem{AS13WI}
+M. Asikainen, K. Haataja, and P. Toivanen, \emph{Wireless indoor tracking of livestock for behavioral analysis,} in Wireless Communications and Mobile Computing Conference (IWCMC), 2013 9th International, 2013, pp. 1833–1838.
 
 \bibitem{wikibov} 
 https://en.wikivet.net/Bovine\_Physiology\_-\_WikiNormals, taken 12:30 22 sep
