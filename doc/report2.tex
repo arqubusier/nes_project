@@ -298,7 +298,7 @@
 % not capitalized unless they are the first or last word of the title.
 % Linebreaks \\ can be used within to get better formatting as desired.
 % Do not put math or special symbols in the title.
-\title{WSN for Cattle Monitoring -- Related Work and Design}
+\title{WSN for Cattle Monitoring -- Related Work and Design Proposal}
 
 % author names and affiliations
 % use a multiple column layout for up to three different
@@ -367,14 +367,15 @@ Email: o.a.m.elshal@student.tue.nl}}
 \subsection{Background}
 
 The livestock industry constitutes a considerable part of the world’s economy.
-In fact, it generates some \euro{} 8.6 billion every year in the Netherlands alone~\cite{nedgov}. At the same time, there is a clear trend of automatization in
+In fact, it generates around \euro{} 8.6 billion every year in the Netherlands
+alone~\cite{nedgov}. At the same time, there is a clear trend of automation in
 this sector that aims to increase the efficiency and decrease the amount of
 human labour.
 
-However, one of the major costs for the farmers in this field, is diseases
-contracted by their animals. By developing a system that could detect such
-diseases, and other abnormal behavior, one could potentially reduce this costs
-by a great amount.  
+However, one of the major costs for the farmers in this field is due to the
+diseases contracted by their animals. By developing a system that could detect
+such diseases, and other abnormal behavior, one could potentially reduce this
+cost by a great amount.  
 
 
 \subsection{Application Description}
@@ -393,16 +394,60 @@ health characteristics; and a number of relay nodes on fixed positions in the
 field, forwarding data from the sensor nodes to the base station. The reason
 for using relay nodes, is to be able to cover the majority of the field.
 
-The system will be used both to detect different types of diseases: fever, lameness and mastitis, and to detect if a cow is in estrus.  This can be accomplished by the use accelerometer-, microphone-, and temperature sensors in the sensor nodes~\cite{hese2014}. Every 4 minutes, the sensor nodes will send the acquired data in a processed form to the base station for storage. The base station can analyse the sample values to detect patterns that correspond to different diseases or the onset of estrus.
+The system will be used both to detect different types of diseases, for
+example: fever, lameness and mastitis, and to detect if a cow is in estrus.
+This can be accomplished by the of use accelerometer-, microphone-, and
+temperature sensors in the sensor nodes~\cite{hese2014}. Every 5 minutes, the
+sensor nodes will send the acquired data in a processed form to the base
+station for storage. The base station can analyse the sample values to detect
+patterns that correspond to different diseases or the onset of estrus.
 
 \subsection{Related Work}
-Wireless livestock monitoring has became a widely researched area in recent years due to the increased availability and lower costs of wireless sensor network technologies. WSN have been utilized in many livestock monitoring applications around the world such as animal localization, behavior analysis, health monitoring or pregnancy detection in cows. Several studies are concentrated to raw data collection~\cite{GU06AN,WA15IN} for later data processing and research. The main drawback of these studies is the high energy consumption of the sensor nodes and thus, the limited time (only a few days at most) these nodes can function. Also the storage and processing of collected data would be a problem in longer term.
 
-Most of the livestock monitoring WSNs are designed for cattles \cite{GU06AN, KU15AZ, SM06AN, SO05AW, MA14CA, HW11DE, WA15IN, KW12PR, PA15SO, NO13WI, HU10ZI, KW09WI} but there are also studies for sheep health and behavior monitoring~\cite{NA12MO} or chicken monitoring for avian influenza surveillance in poultry farms with ultra low power wireless sensor nodes~\cite{OK12DE, OK13DE}. The wireless health monitoring of cows has been one of the most important researched topic among authors. Kumar et al.~\cite{KU15AZ} and Wang et al.~\cite{WA15IN} both developed cattle health monitoring WSNs based on the IEEE~802.15.4 protocol. Hwang et al.~\cite{HW11DE} showed that continuous monitoring and comparison of cattle activity can be used for disease prediction and prevention. In addition to the disease prediction, with continuous monitoring of cows, also the pregnancy detection is possible~\cite{NO13WI}.
+Wireless livestock monitoring has became a widely researched area in recent
+years due to the increased availability and lower costs of wireless sensor
+network technologies. WSN have been utilized in many livestock monitoring
+applications around the world such as animal localization, behavior analysis,
+health monitoring or pregnancy detection in cows. Several studies are
+concentrated to raw data collection~\cite{GU06AN,WA15IN} for later data
+processing and research. The main drawback of these studies is the high energy
+consumption of the sensor nodes, which limits the lifetime of the nodes to only
+a few days at most.  Also the storage and processing of collected data would be
+a problem in longer term.
 
-Wireless sensor networks can be used for livestock localization indoor~\cite{AS13WI} or outdoor~\cite{PA15SO, HU10ZI}. Panckhurst et al.~\cite{PA15SO} developed a GPS based wireless positioning system, while Huircan et al.~\cite{HU10ZI} demonstrated that the link quality indication (LQI) feature of the ZigBee protocol can also be a candidate for outdoor livestock localization. Livestock positioning can have different purposes around the world, like the prevention of pastureland degradation and desertification in Mongolia~\cite{CH13CL} or cattle rustling prevention in Africa~\cite{MA14CA}.
+Most of the livestock monitoring WSNs are designed for cattles \cite{GU06AN,
+KU15AZ, SM06AN, SO05AW, MA14CA, HW11DE, WA15IN, KW12PR, PA15SO, NO13WI, HU10ZI,
+KW09WI} but there are also examples of studies for sheep health and behavior
+monitoring~\cite{NA12MO} and chicken monitoring for avian influenza
+surveillance in poultry farms with ultra low power wireless sensor
+nodes~\cite{OK12DE, OK13DE}. The wireless health monitoring of cows has been
+one of the most important researched topic among authors. Kumar et
+al.~\cite{KU15AZ} and Wang et al.~\cite{WA15IN} both developed cattle health
+monitoring WSNs based on the IEEE~802.15.4 protocol. Hwang et al.~\cite{HW11DE}
+showed that continuous monitoring and comparison of cattle activity can be used
+for disease prediction and prevention. In addition to disease prediction,
+pregnancy detection is also possible using continuous monitoring~\cite{NO13WI}.
 
-The ZigBee protocol and a carrier frequency of 2.4 GHz are widely used \cite{KU15AZ, MA14CA, HU10ZI, NA12MO}, however some of the authors \cite{SO05AW, OK12DE, OK13DE, PA15SO} prefered sub-gigahertz carrier frequencies due to the higher communication distance. Sousa Silva et al.~\cite{SO05AW} have demonstrated that a Floating Base Sensor Network (FBSN) is also a feasible solution for data collection in large mobile wireless sensor networks. Kwong et al.~\cite{KW09WI} have analysed the problem of signal penetration through animal's body and they proposed a two antennae scheme for an optimized radio coverage of the cattle's neck collar. In this project we will not consider the interference caused by the body of the cows.
+Wireless sensor networks can be used for livestock localization
+indoor~\cite{AS13WI} or outdoor~\cite{PA15SO, HU10ZI}. Panckhurst et
+al.~\cite{PA15SO} developed a GPS based wireless positioning system, while
+Huircan et al.~\cite{HU10ZI} demonstrated that the link quality indication
+(LQI) feature of the ZigBee protocol can also be a candidate for outdoor
+livestock localization. Livestock positioning can have different purposes
+around the world, like the prevention of pastureland degradation and
+desertification in Mongolia~\cite{CH13CL} or cattle rustling prevention in
+Africa~\cite{MA14CA}.
+
+The ZigBee protocol and a carrier frequency of 2.4 GHz are widely used
+\cite{KU15AZ, MA14CA, HU10ZI, NA12MO}, however some of the authors
+\cite{SO05AW, OK12DE, OK13DE, PA15SO} prefered sub-gigahertz carrier
+frequencies due to the higher communication distance. Sousa Silva et
+al.~\cite{SO05AW} have demonstrated that a Floating Base Sensor Network (FBSN)
+is also a feasible solution for data collection in large mobile wireless sensor
+networks. Kwong et al.~\cite{KW09WI} have analysed the problem of signal
+penetration through animal's body and they proposed a two antennae scheme for
+an optimized radio coverage of the cattle's neck collar. In this project we
+will not consider the interference caused by the body of the cows.
 
 \section{Application Specific Challenges}
 
@@ -410,59 +455,55 @@ The ZigBee protocol and a carrier frequency of 2.4 GHz are widely used \cite{KU1
 
 Mobility presents a major challenge for sensor nodes mounted on cattle since
 they are subject to frequent changes in location.  The animal monitoring system
-must be able to support animal mobility; wireless sensors are used to monitor
-the health condition of animals moving freely around open fields. The network
-topology and routing paths should therefore be dynamic, able to respond to
-frequent animal movement while optimising packet delivery.
+must be able to support animal mobility. The network topology and routing paths
+should therefore be dynamic, able to respond to frequent animal movement while
+optimising packet delivery.
 
 \subsection{Size of Field}
 
-The key challenge in any wireless network is the coverage of the all the
-wireless nodes. In the Cattle Monitoring WSN the network architecture should
-account to cover the average size of fields and must be scalable when needed
-accordingly for larger fields. As per now the average size of fields in
-Netherlands is 100,000 m$^2$ and maximum coverage done in Zigbee WSN
-protocol is approx 500 m so by using one or two relay nodes the sufficient area
-of average cattle field can be covered.
+A key challenge in a wireless network of this kind is the coverage of the
+wireless nodes. In cattle monitoring WSNs the network architecture should be
+able to cover enough area of the fields and must be scalable accordingly when
+needed for larger fields. The average size of a dairy farm field in the
+Netherlands is around 100,000 m$^2$ and the maximum range of Zigbee WSN
+protocol is approximately 500 m, so theoretically, only one or two relay nodes
+could cover a sufficient area of the field. In reality, transceivers with such
+range capabilities are not used in WSN applications, because of cost and power
+constraints. 
 
 \subsection{Wireless Communication}
 
-As the animals move freely in the cattle.Wireless technology is considered the
-only feasible method to establish and maintain communications between a base
-station and network nodes attached to cattle animals. The wireless
-communication has various challenges like signal attenuation in the medium,
-interference from other radio signals, crosstalk from the other nodes, etc. As
-the radio signal generated from the node is weak owing to preserve battery on
-the node, a significant amount of wireless signal is attenuated from the animal
-tissue. For maximum signal coverage from relay node the antenna on the animal
-is placed on a neck belt with two antenna on both sides of the neck to have
-spatial diversity. Also the radio element is switched off as soon as the data
-transmission is finished so as to maximize battery life.
+As the animals move freely on the field, wireless technology is considered the
+only feasible method to establish and maintain communication between a base
+station and network nodes attached to the cattle. The wireless communication
+imposes several challenges on the design, like signal attenuation in the
+medium, interference from other radio signals, crosstalk from the other nodes,
+etc. As the radio signal generated from the node is weak owing to preserve
+battery on the node, a significant amount of wireless signal is attenuated by
+the animal tissue.  For maximum signal coverage from relay node the antenna on
+the animal is placed on a neck collar with two antenna on both sides of the
+neck to have spatial diversity. Also the radio element is switched off as soon
+as the data transmission is finished so as to maximize battery life.
 
 \subsection{Energy Consumption}
 
-The battery usage is one the major constraint in the Cattle Monitoring System
-because the radio collar used for cattle monitoring is expected to run for
-5 years without battery replacement. As there is limited battery power
-available per node the design should account for low powered, lightweight radio
-antenna. The network protocol should be designed so as to use limited battery
-power and only communicate with the base station, to provide adequate amount of
-data required for monitoring health of cattle. The processing capabilities of
-the node should be in a way that it consumes minimum amount of power from the
-battery and perform the necessary operations on the data as requested by the
-network protocol.
+The battery usage is one of the major constraint in cattle monitoring networks
+because the radio collars used for cattle monitoring are expected to run for up
+to several years without battery replacement. As there is limited battery power
+available per node, low powered, lightweight radio antennas should be
+considered for the design. The network protocol should be designed so as to use
+limited battery power and only communicate with the base station, to provide
+adequate amount of data required for monitoring health of cattle. The
+processors used by the nodes should be chosen so as to consume a minimum amount
+of power, while still being able to perform the necessary operations on the
+data as required by the application.
 
 \subsection{Cost of the System}
 
-The Wireless Sensor Network developed will be used to monitor the health of the
-cattle which in turn should reduce the cost of keeping the cattle in good
-health. For a cattle WSN it should be cheap and the wireless nodes must be
-low-cost with high lifespan and low maintenance to reduce the average cost of
-maintaining the cattle. Another reason for sensor nodes to be low-cost is the
-requirement of potentially high number of nodes needed for monitoring an entire
-herd of cattle. Also as the WSN becomes more widespread and general the average
-cost of having a WSN monitoring system will reduce considerably over a period
-of time.  
+The design of a WSN should not be too expensive. Furthermore the wireless nodes
+must be low-cost with high lifespan and low maintenance in order to reduce the
+cost of managing the system. Another reason for the sensor nodes to be low-cost
+is the potentially high number of nodes needed for monitoring an entire herd.
 
 \section{Requirements}
 
@@ -471,15 +512,15 @@ needs to meet the following requirements:
 
 \begin{enumerate} 
 
-    \item The network must be implemented in such a way that If a sensor node
-        moves out of coverage of the network, the sensor node will be
-        reassigned to the network once it moves into coverage again.  
+    \item The network must be implemented in such a way that if a sensor node
+        moves out of coverage, the sensor node will be reassigned to the
+        network once it moves into coverage again.  
         
     \item The end-to-end latency between the sensor nodes and the base station
         must be less than 1 minute for at least 90 \% of data packets.
         
     \item For every sensor node at least 70 \% of the recorded sensor data must
-        be delivered to the base station every 12 hours.
+        be delivered to the base station during a 5 hour period.
         
     \item The time until the first sensor node of the network fails must be
         greater than one year.  
@@ -492,8 +533,8 @@ needs to meet the following requirements:
     \item When out of coverage, each sensor node must be able to store sensor
         values for a period of up to four hours.
     
-    \item  sensor node must not be out of coverage for more than four hours at
-        a time.
+    \item  On average, 99 \% of the sensor nodes must not be out of coverage
+        for more than four hours at a time.
 
 \end{enumerate}
 
@@ -505,9 +546,9 @@ the amount of data generated by the sensors. Estimating this amount is thus
 also very important. For storing the temperature of the cow after processing
 the raw data from the sensors, one byte is enough to give a reasonable
 resolution. This is because a dairy cow’s normal rectal temperature lies
-between 38.3$^\circ$C and 38.9$^\circ$C~\cite{wikibov} and one could limiting the
-byte to represent values between 30$^\circ$C and 50$^\circ$C without losing
-any information.  Using the same argumentation, one byte could also be used to
+between 38.3$^\circ$C and 38.9$^\circ$C~\cite{wikibov} and one could limit the
+byte to represent values between 30$^\circ$C and 50$^\circ$C without losing any
+information.  Using the same argumentation, one byte could also be used to
 store the average heart rate, because the normal heart rate for a dairy cow
 lies between 40 and 84 beats per minute~\cite{wikibov}.
 
@@ -523,27 +564,30 @@ for behavioural studies on cows, one could potentially store this data using
 only two bits per sample.
 
 Using two samples for both the temperature and the heart rate, while also
-rounding up to the nearest byte, total amount of data needed to be sent each
-five minute interval would be five bytes.
+rounding up to the nearest byte, the total amount of sensor data needed to be
+sent each five minute interval would be five bytes.
 
 
 \section{Simulation Software}
 
-The design of the network will be tested using cooja, which is a simulator for
-contiki nodes and thus no experiments will be done on real hardware. This simulator is compatible with the following platforms: TI
-MSP430x,  TI MSP430x, Atmel AVR, micaz, TI MSP430 and TI MSP430.
+The design of the network will only be tested in simulation, no real world
+experiments will be done. We will use cooja, which is a simulator for contiki
+node. This simulator is compatible with the following platforms: TI MSP430x (TI
+CC2420), TI MSP430x (TI CC2520), Atmel AVR (TI CC2420), TI MSP430 (TI CC2420)
+and TI MSP430 (RFM TR1001).
 
-The number of emulated nodes that that can be simulated using this software
-depends on memory and the application running on nodes. As there is a main
-simulation thread, using more than two cores (one for the simulation and one
-for the rest) gives no significant improvement~\cite{contikidev}.
+The number of nodes that can be simulated using this software depends on memory
+of the machine running the simulation and the application running on the nodes.
+As there is a main simulation thread, using more than two cores (one for the
+simulation and one for the rest) gives no significant
+improvement~\cite{contikidev}.
 
 To simulate the movement of the cows in Cooja, a mobility plugin first has to
 be installed. However, to be able to generate our own specific mobility file,
 another tool like BonnMotion has to be used to make the mobility output format
 compatible with Cooja’s mobility plugin format. We will only be considering
 a few simple mobility models like: the gauss-markov-, the random waypoint- and
-the reference point group mobility models. As simulating a more complex
+the reference point group mobility models. Simulating more complex and accurate
 mobility patterns of the cows is not the goal of this project.
 
 To provide a reliable transmission range, there is a UDGM (Unit Disk Graph
@@ -554,19 +598,21 @@ differ~\cite{contikidev}.
 
 Contiki supports different MAC layers: X-MAC, LLP (Low Power Probing), Simple
 TDMA and nullmac (non-persistent CSMA).  X-MAC and LPP are low power MACs that
-work best under low traffic loads(10).  Furthermore, Contiki supports different
-protocol stacks like uIP which is a very small and fully compliant TCP/IP
-stack. Contiki supports Rime stack which consists of small layers built on top
-of each other and has single and multi-hop broadcast~\cite{coojacrash}.
+work best under low traffic loads~\cite{coojacrash}.  Furthermore, Contiki
+supports different protocol stacks like uIP which is a very small and fully
+compliant TCP/IP stack. Contiki also supports Rime stack which consists of
+small layers built on top of each other and has single and multi-hop
+broadcast~\cite{coojacrash}.
 
 
 \section{Network Architecture}
 
-The system will developed for platforms supporting ContikiOs. For the physical-
-and MAC layers, the standard protocol IEEE 802.15.4~\cite{ieee802154} will be
-used.  For the network- and application layer, features from ContikiOs will be
-used.  Moreover, a routing algorithm might possibly be designed, if the routing
-algorithms present in ContikiOs are deemed unfitting for our application. 
+The system will be developed for platforms supporting ContikiOs. For the
+physical- and MAC layers, the standard protocol IEEE 802.15.4~\cite{ieee802154}
+will be used.  For the network- and application layer, features from ContikiOs
+will be used.  Moreover, a routing algorithm might possibly be designed, if the
+routing algorithms present in ContikiOs are deemed unfitting for our
+application. 
 
 \subsection{Network Topology}
 
@@ -577,10 +623,13 @@ algorithms present in ContikiOs are deemed unfitting for our application.
     \label{fig:topology}
 \end{figure}
 
-The network topology will have a tree like structure with the base station as
-the root of the tree, see Fig \ref{fig:topology}. The relay nodes will act as
-the branches of the tree, being connected to the base station through each
-other, while the sensor nodes will behave like the leaves of the tree.
+The network topology will have a tree like structure with the base station
+acting as the root of the tree, see Fig \ref{fig:topology}. The relay nodes
+will act as the branches of the tree, being connected to the base station
+through each other, while the sensor nodes will behave like the leaves of the
+tree. Using this setup, the sensor nodes will be configured as reduced
+functioning devices (RFDs) and the other nodes will be full functioning devices
+(FFDs).
 
 
 \subsection{Physical Layer}
@@ -599,27 +648,27 @@ For the MAC layer, there are two modes to be used in the IEEE 802.15.4
 standard: nonbeacon-enabled mode and beacon-enabled mode. In the former
 a unslotted CSMA/CA mechanism is used. In the latter one, a more elaborate
 scheme is used, wherein special nodes of the network, called coordinators,
-regularly send out beacons to synchronize the nodes it is associated with. The
-period between two beacons is called a superframe, and within this the nodes
-use a slotted CSMA/CA mechanism.
+regularly send out beacons to synchronize with the nodes they are associated
+with. The period between two beacons is called a superframe, and within this
+the nodes use a slotted CSMA/CA mechanism.
 
 Because of the need for synchronization, the beacon-enabled mode might cause
-problems if a sensor node moves out of coverage of a coordinator for a longer
-period of time, or if a sensor node needs to switch to a different coordinator.
-The sensor node might have to listen for a very long time to receive the next
-beacon, possibly even the whole time while it is out of range, thus consuming
-a lot of power.
+problems if a sensor node moves out of the coverage of a coordinator for
+a longer period of time, or if a sensor node needs to switch to a different
+coordinator.  The sensor node might have to listen for a very long time to
+receive the next beacon, possibly even the whole time while it is out of range,
+thus consuming a lot of power.
 
 On the other hand, the unslotted CSMA/CA mechanism of the nonbeacon-enabled
 mode, in addition to being less complex, does not require the nodes associated
 with a coordinator to regularly receive a beacon, and is thus suitable for the
-mobile nature of our application. The only drawback is the power consumption
+mobile nature of our application. The main drawback is the power consumption
 required for continuously listening at regular intervals.  However, since the
 relay nodes and the base station are the only ones that need to receive data,
-only these have to listen, and not the sensor nodes. In view of these
-arguments, the design will use the nonbeacon-enabled mode. However, as contiki
-does not implement unslotted CSMA/CA, we will use one of the congestion-based
-MAC layers that contiki provides, in its place.
+only these will have to listen continuously, and not the sensor nodes. In view
+of these arguments, the design will use the nonbeacon-enabled mode. However, as
+contiki does not implement unslotted CSMA/CA, we will use one of the
+congestion-based MAC layers that contiki provides, in its place.
 
 %\section{Work Plan}
 
