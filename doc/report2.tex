@@ -407,6 +407,64 @@ diseases or the onset of estrus.
 
 \section{Application Specific Challenges}
 
+\subsection{Mobility}
+
+Mobility presents a major challenge for sensor nodes mounted on cattle since
+they are subject to frequent changes in location.  The animal monitoring system
+must be able to support animal mobility; wireless sensors are used to monitor
+the health condition of animals moving freely around open fields. The network
+topology and routing paths should therefore be dynamic, able to respond to
+frequent animal movement while optimising packet delivery.
+
+\subsection{Size of Field}
+
+The key challenge in any wireless network is the coverage of the all the
+wireless nodes. In the Cattle Monitoring WSN the network architecture should
+account to cover the average size of fields and must be scalable when needed
+accordingly for larger fields. As per now the average size of fields in
+Netherlands is 100,000 square meters and maximum coverage done in Zigbee WSN
+protocol is approx 500m so by using one or two relay nodes the sufficient area
+of average cattle field can be covered.
+
+\subsection{Wireless Communication}
+
+As the animals move freely in the cattle.Wireless technology is considered the
+only feasible method to establish and maintain communications between a base
+station and network nodes attached to cattle animals. The wireless
+communication has various challenges like signal attenuation in the medium,
+interference from other radio signals, crosstalk from the other nodes, etc. As
+the radio signal generated from the node is weak owing to preserve battery on
+the node, a significant amount of wireless signal is attenuated from the animal
+tissue. For maximum signal coverage from relay node the antenna on the animal
+is placed on a neck belt with two antenna on both sides of the neck to have
+spatial diversity. Also the radio element is switched off as soon as the data
+transmission is finished so as to maximize battery life.
+
+\subsection{Energy Consumption}
+
+The battery usage is one the major constraint in the Cattle Monitoring System
+because the radio collar used for cattle monitoring is expected to run for
+5 years without battery replacement. As there is limited battery power
+available per node the design should account for low powered, lightweight radio
+antenna. The network protocol should be designed so as to use limited battery
+power and only communicate with the base station, to provide adequate amount of
+data required for monitoring health of cattle. The processing capabilities of
+the node should be in a way that it consumes minimum amount of power from the
+battery and perform the necessary operations on the data as requested by the
+network protocol.
+
+\subsection{Cost of the System}
+
+The Wireless Sensor Network developed will be used to monitor the health of the
+cattle which in turn should reduce the cost of keeping the cattle in good
+health. For a cattle WSN it should be cheap and the wireless nodes must be
+low-cost with high lifespan and low maintenance to reduce the average cost of
+maintaining the cattle. Another reason for sensor nodes to be low-cost is the
+requirement of potentially high number of nodes needed for monitoring an entire
+herd of cattle. Also as the WSN becomes more widespread and general the average
+cost of having a WSN monitoring system will reduce considerably over a period
+of time.  
+
 
 \section{Scope}
 
@@ -525,6 +583,43 @@ arguments, the design will use the nonbeacon-enabled mode.
 
 
 \section{Simulation Software}
+
+Compatible Hardware: TI MSP430x,  TI MSP430x, Atmel AVR, micaz, TI MSP430, TI
+MSP430 and Native
+
+Max Number of Nodes: The number of emulated nodes depends on memory and the
+application running on nodes which can also affect simulation speed. As there
+is a main simulation thread, using more than two cores (one for the simulation
+and one for the rest) gives no significant improvement(9).
+
+Transmission power: Max Power of tmote for example is 31. Transmission power
+level can be controlled according to your needs using the function call
+cc2420_set_txpower(desired_power_level), where desired_power_level could be any
+of the following values (in the increasing order of intensity): 3, 7, 11, 15,
+19, 23, 27, 31.
+
+Mobility models Capability: The mobility plugin have to be installed in order
+to be able to use mobility in Cooja. However, to be able to generate our own
+specific mobility file, another tool like BonnMotion have to be used to make
+the mobility output format compatible with Cooja’s mobility plugin format. To
+simulate the movement of the cows, we will only be considering a few simple
+mobility models like: gauss-markov, random waypoint and reference point group
+mobility model. As simulating a more complex mobility patterns of the cows is
+not the goal of this project. ~\cite{contikt_dev}
+
+Simulated Environment Dimensions: To provide a reliable transmission range,
+there is UDGM (Unit Disk Graph Radio Medium) implementation that can be
+configured to change some parameters like transmission range and interference
+range, but also depending on the transmission power parameter, the resulting
+transmission range will differ.~\cite{contikt_dev}
+
+Support for different Node Types (Relay, data sink, sensors) Cooja supports all
+the different node types like sensors, relays and actuators.  Simply according
+to your definition of each node.
+
+Support for our MAC-layer/ protocol stack
+Contiki supports different MAC layers: X-MAC, LLP (Low Power Probing), Simple TDMA and nullmac (non-persistent CSMA). X-MAC and LPP are low power MACs that work best under low traffic loads(10).
+Furthermore, Contiki supports different protocol stacks like uIP which is a very small and fully compliant TCP/IP stack. Contiki supports also Rime stack which consists of small layers built on top of each other and has single and multi-hop broadcast(11).
 
 
 \section{Work Plan}
@@ -682,6 +777,10 @@ IEEE Computer Society, LAN/MAN Standards Committee, Institute of Electrical
 and Electronics Engineers and IEEE-SA Standards Board, \emph{IEEE standard
 for local and metropolitan area networks. Part 15.4}, isbn
 978-0-7381-6684-1, Institute of Electrical and Electronics Engineers, 2011,
+
+\bibitem{contikti_dev}
+    
+http://contiki-developers.narkive.com, taken 13.00 22 sep 2015.
 
 %citation format
     %H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
