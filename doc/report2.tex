@@ -65,7 +65,7 @@
 % \ifCLASSINFOpdf conditional that works the same way.
 % When switching from latex to pdflatex and vice-versa, the compiler may
 % have to be run twice to clear warning/error messages.
-
+\usepackage[official]{eurosym}
 
 
 
@@ -367,7 +367,7 @@ Email: o.a.m.elshal@student.tue.nl}}
 \subsection{Background}
 
 The livestock industry constitutes a considerable part of the world’s economy.
-In fact, it generates some € 8.6 billion every year in the Netherlands alone~\cite{nedgov}. At the same time, there is a clear trend of automatization in
+In fact, it generates some \euro{} 8.6 billion every year in the Netherlands alone~\cite{nedgov}. At the same time, there is a clear trend of automatization in
 this sector that aims to increase the efficiency and decrease the amount of
 human labour.
 
@@ -529,7 +529,7 @@ five minute interval would be five bytes.
 
 The system will developed for platforms supporting ContikiOs. For the
 physical- and MAC layers, the standard protocol IEEE 802.15.4
-\cite{ieee_computersocietyieee2011} will be used.  For the network- and
+\cite{ieee802154} will be used.  For the network- and
 application layer, features from ContikiOs will be used.  Moreover, a routing
 algorithm might possibly be designed, if the routing algorithms present in
 ContikiOs are deemed unfitting for our application.
@@ -539,7 +539,7 @@ ContikiOs are deemed unfitting for our application.
 To mitigate the problems with coverage, tranceivers with carrier frequencies
 between 902 and 928 of the IEEE 802.15.4 standard, will be considered in order
 to get an increased range. Even though these frequencies provide a lower
-datarate, of around 40 kbp/s \cite{ieeecomputersocietyieee2011}, it is
+datarate, of around 40 kbp/s \cite{ieee802154}, it is
 still sufficient for the small amounts of data collected by the sensors.
 Furthermore, the modulation scheme to be used will either be ASK-, BPSK or
 O-QPSK.
@@ -598,13 +598,13 @@ the mobility output format compatible with Cooja’s mobility plugin format. To
 simulate the movement of the cows, we will only be considering a few simple
 mobility models like: gauss-markov, random waypoint and reference point group
 mobility model. As simulating a more complex mobility patterns of the cows is
-not the goal of this project~\cite{contiktdev}.
+not the goal of this project~\cite{contikidev}.
 
 Simulated Environment Dimensions: To provide a reliable transmission range,
 there is UDGM (Unit Disk Graph Radio Medium) implementation that can be
 configured to change some parameters like transmission range and interference
 range, but also depending on the transmission power parameter, the resulting
-transmission range will differ~\cite{contiktdev}.
+transmission range will differ~\cite{contikidev}.
 
 Support for different Node Types (Relay, data sink, sensors) Cooja supports all
 the different node types like sensors, relays and actuators.  Simply according
@@ -766,13 +766,13 @@ jun,
 2011,
 pages 110--117,
 
-\bibitem{ieeecomputersocietyieee2011}
+\bibitem{ieee802154}
 IEEE Computer Society, LAN/MAN Standards Committee, Institute of Electrical
 and Electronics Engineers and IEEE-SA Standards Board, \emph{IEEE standard
 for local and metropolitan area networks. Part 15.4}, isbn
 978-0-7381-6684-1, Institute of Electrical and Electronics Engineers, 2011,
 
-\bibitem{contiktidev}
+\bibitem{contikidev}
     
 http://contiki-developers.narkive.com, taken 13.00 22 sep 2015.
 
