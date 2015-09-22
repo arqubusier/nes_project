@@ -94,7 +94,7 @@
 % *** GRAPHICS RELATED PACKAGES ***
 %
 \ifCLASSINFOpdf
-  % \usepackage[pdftex]{graphicx}
+\usepackage[pdftex]{graphicx}
   % declare the path(s) where your graphic files are
   % \graphicspath{{../pdf/}{../jpeg/}}
   % and their extensions so you won't have to specify these with
@@ -560,14 +560,28 @@ stack. Contiki supports Rime stack which consists of small layers built on top
 of each other and has single and multi-hop broadcast~\cite{coojacrash}.
 
 
-\section{Protocol Stack}
+\section{Network Architecture}
 
-The system will developed for platforms supporting ContikiOs. For the
-physical- and MAC layers, the standard protocol IEEE 802.15.4
-\cite{ieee802154} will be used.  For the network- and
-application layer, features from ContikiOs will be used.  Moreover, a routing
-algorithm might possibly be designed, if the routing algorithms present in
-ContikiOs are deemed unfitting for our application.
+The system will developed for platforms supporting ContikiOs. For the physical-
+and MAC layers, the standard protocol IEEE 802.15.4~\cite{ieee802154} will be
+used.  For the network- and application layer, features from ContikiOs will be
+used.  Moreover, a routing algorithm might possibly be designed, if the routing
+algorithms present in ContikiOs are deemed unfitting for our application. 
+
+\subsection{Network Topology}
+
+\begin{figure}
+    \centering
+    \includegraphics[trim= 0 150  0 150, clip, width=0.4\textwidth]{Figure1.pdf}
+    \caption{An overview of the network topology.}
+    \label{fig:topology}
+\end{figure}
+
+The network topology will have a tree like structure with the base station as
+the root of the tree, see Fig \ref{fig:topology}. The relay nodes will act as
+the branches of the tree, being connected to the base station through each
+other, while the sensor nodes will behave like the leaves of the tree.
+
 
 \subsection{Physical Layer}
 
@@ -606,7 +620,6 @@ only these have to listen, and not the sensor nodes. In view of these
 arguments, the design will use the nonbeacon-enabled mode. However, as contiki
 does not implement unslotted CSMA/CA, we will use one of the congestion-based
 MAC layers that contiki provides, in its place.
-
 
 %\section{Work Plan}
 
