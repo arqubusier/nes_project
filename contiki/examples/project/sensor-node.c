@@ -38,6 +38,8 @@
 
 #include "contiki.h"
 #include "random.h"
+#include "memb.h"
+#include "list.h"
 
 #include <stdio.h> /* For printf() */
 #include <stdbool.h>
@@ -62,25 +64,43 @@ struct sensor_vals{
 
 
 //TODO Determine if needed: static bool is_adding_sensor = false;
-//MEMB(buff_memb, struct sensor_vals, MAX_NEIGHBORS);
+MEMB(buff_memb, struct sensor_vals, BUFF_SIZE);
+//memb_init(buff_memb);
+
+LIST(sensor_buff);
+//list_init(sensors_buff);
+
+static void print_list(list_t l){
+    struct sensor_vals * n;
+    int cnt;
+    printf("PRINTING LIST\n");
+    for (n = list_head(l), cnt = 0; n != NULL; n = list_item_next(n), cnt++){
+        printf("Cnt: %d, T: %d, H: %d, B: %d\n",
+                cnt, n->temp, n->heart, n->behaviour);
+    }
+    printf("END OF LIST\n");
+}
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
     PROCESS_BEGIN();
+
     static struct etimer et;
     etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
     
     while(1){
-        struct sensor_vals new_vals;
-        new_vals.temp = random_rand() % MAX_TEMP;
-        new_vals.heart = random_rand() % MAX_HEART;
-        new_vals.behaviour = random_rand() % MAX_BEHAVIOUR;
+        struct sensor_vals* new_vals = memb_alloc(&buff_memb);
 
-        printf("New temp: %d, heart: %d, behaviour: %d\n", new_vals.temp,
-                new_vals.heart, new_vals.behaviour);
+        new_vals->temp = random_rand() % MAX_TEMP;
+        new_vals->heart = random_rand() % MAX_HEART;
+        new_vals->behaviour = random_rand() % MAX_BEHAVIOUR;
+
+        list_add(sensor_buff, new_vals);
+
+        print_list(sensor_buff);
 
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
-        etimer_set(&et, CLOCK_SECOND*4);
+        etimer_set(&et, CLOCK_SECOND*10);
     }
     
     PROCESS_END();
