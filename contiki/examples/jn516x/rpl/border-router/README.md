@@ -1,1 +1,0 @@
-A RPL border router. See ../README.md for more.
