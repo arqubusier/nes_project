@@ -62,7 +62,7 @@ struct sensor_vals{
 
 
 //TODO Determine if needed: static bool is_adding_sensor = false;
-MEMB(buff_memb, struct sensor_vals, MAX_NEIGHBORS);
+//MEMB(buff_memb, struct sensor_vals, MAX_NEIGHBORS);
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
@@ -76,7 +76,7 @@ PROCESS_THREAD(sensor_process, ev, data)
         new_vals.heart = random_rand() % MAX_HEART;
         new_vals.behaviour = random_rand() % MAX_BEHAVIOUR;
 
-        printf("New temp: %d, heart: %d, behaviour: %d", new_vals.temp,
+        printf("New temp: %d, heart: %d, behaviour: %d\n", new_vals.temp,
                 new_vals.heart, new_vals.behaviour);
 
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
