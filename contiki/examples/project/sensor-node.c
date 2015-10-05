@@ -44,8 +44,10 @@
 #include <stdio.h> /* For printf() */
 #include <stdbool.h>
 /*---------------------------------------------------------------------------*/
+PROCESS(init_process, "Init process");
 PROCESS(sensor_process, "Sensor process");
-AUTOSTART_PROCESSES(&sensor_process);
+PROCESS(transmit_process, "Transmit process");
+AUTOSTART_PROCESSES(&init_process);
 /*---------------------------------------------------------------------------*/
 
 struct sensor_vals{
@@ -57,38 +59,60 @@ struct sensor_vals{
 #define MAX_TEMP 65535
 #define MAX_HEART 65535
 #define MAX_BEHAVIOUR 255
-#define SAMPLE_RATE 4
+#define SAMPLE_RATE 14
+#define TRANSMIT_RATE 5 
 
 #define BUFF_SIZE 256
 #define BUFF_SIZE_EXP 8
 
+#define SENSOR_VALS_PER_PACKET 5
+
 
 //TODO Determine if needed: static bool is_adding_sensor = false;
 MEMB(buff_memb, struct sensor_vals, BUFF_SIZE);
-//memb_init(buff_memb);
 
 LIST(sensor_buff);
-//list_init(sensors_buff);
+
+static void print_sensor(struct sensor_vals *s){
+    printf("T: %d, H: %d, B: %d", s->temp, s->heart, s->behaviour);
+}
+
 
 static void print_list(list_t l){
-    struct sensor_vals * n;
+    struct sensor_vals * s;
     int cnt;
     printf("PRINTING LIST\n");
-    for (n = list_head(l), cnt = 0; n != NULL; n = list_item_next(n), cnt++){
-        printf("Cnt: %d, T: %d, H: %d, B: %d\n",
-                cnt, n->temp, n->heart, n->behaviour);
+    for (s = list_head(l), cnt = 0; s != NULL; s = list_item_next(s), cnt++){
+        printf("Cnt: %d, ", cnt);
+        print_sensor(s);
+        printf("\n");
     }
     printf("END OF LIST\n");
 }
+
+PROCESS_THREAD(init_process, ev, data){
+    PROCESS_BEGIN();
+    list_init(sensor_buff);
+    memb_init(&buff_memb);
+
+    process_start(&transmit_process, NULL);
+    process_start(&sensor_process, NULL);
+
+    PROCESS_END();
+}
+
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
     PROCESS_BEGIN();
 
     static struct etimer et;
-    etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
     
     while(1){
+        printf("process SENSOR\n");
+        etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
+        PROCESS_WAIT_UNTIL(etimer_expired(&et));
+
         struct sensor_vals* new_vals = memb_alloc(&buff_memb);
 
         new_vals->temp = random_rand() % MAX_TEMP;
@@ -98,11 +122,36 @@ PROCESS_THREAD(sensor_process, ev, data)
         list_add(sensor_buff, new_vals);
 
         print_list(sensor_buff);
-
-        PROCESS_WAIT_UNTIL(etimer_expired(&et));
-        etimer_set(&et, CLOCK_SECOND*10);
     }
     
     PROCESS_END();
 }
+
+PROCESS_THREAD(transmit_process, ev, data)
+{
+    PROCESS_BEGIN();
+    static struct etimer et;
+
+    while(1){
+        printf("process TRANSMIT\n");
+        etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
+        PROCESS_WAIT_UNTIL(etimer_expired(&et));
+
+        struct sensor_vals *s = list_head(sensor_buff); 
+        int i = 0;
+
+        while (s != NULL && i < SENSOR_VALS_PER_PACKET){
+            printf("TRANSMITTING: ");
+            print_sensor(s);
+            printf("\n");
+
+            memb_free(&buff_memb, list_pop(sensor_buff));
+            s = list_head(sensor_buff); 
+            i++;
+        }
+
+    }
+    PROCESS_END();
+}
+
 /*---------------------------------------------------------------------------*/
