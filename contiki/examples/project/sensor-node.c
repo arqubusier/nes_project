@@ -37,49 +37,79 @@
  */
 
 #include "contiki.h"
-#include "random.h"
-#include "memb.h"
-#include "list.h"
+#include "lib/list.h"
+#include "lib/memb.h"
+#include "lib/random.h"
+#include "net/rime/rime.h"
 
 #include <stdio.h> /* For printf() */
 #include <stdbool.h>
-/*---------------------------------------------------------------------------*/
-PROCESS(init_process, "Init process");
-PROCESS(sensor_process, "Sensor process");
-PROCESS(transmit_process, "Transmit process");
-AUTOSTART_PROCESSES(&init_process);
-/*---------------------------------------------------------------------------*/
+#include <string.h>
 
-struct sensor_vals{
-    uint16_t temp;
-    uint16_t heart;
-    uint8_t behaviour;
-};
-
-#define MAX_TEMP 65535
-#define MAX_HEART 65535
-#define MAX_BEHAVIOUR 255
+#define MAX_TEMP 256
+#define MAX_HEART 256
+#define MAX_BEHAVIOUR 256
 #define SAMPLE_RATE 14
 #define TRANSMIT_RATE 5 
 
 #define BUFF_SIZE 256
 #define BUFF_SIZE_EXP 8
+#define MAX_PACKET_SIZE 128
 
-#define SENSOR_VALS_PER_PACKET 5
+#define SENSOR_VALS_PER_PACKET 10//(MAX_PACKET_SIZE - 1)/5
 
+struct sensor_data{
+    uint8_t temp[2];
+    uint8_t heart[2];
+    uint8_t behaviour;
+};
+
+struct sensor_packet{
+    uint8_t count;
+    struct sensor_data* data;
+};
+
+
+static uint8_t tmp_pkt_buff[MAX_PACKET_SIZE];
 
 //TODO Determine if needed: static bool is_adding_sensor = false;
-MEMB(buff_memb, struct sensor_vals, BUFF_SIZE);
+MEMB(buff_memb, struct sensor_data, BUFF_SIZE);
+
+/*---------------------------------------------------------------------------*/
+PROCESS(sensor_process, "Sensor process");
+PROCESS(transmit_process, "Transmit process");
+AUTOSTART_PROCESSES(&sensor_process, &transmit_process);
+/*---------------------------------------------------------------------------*/
+
 
 LIST(sensor_buff);
 
-static void print_sensor(struct sensor_vals *s){
-    printf("T: %d, H: %d, B: %d", s->temp, s->heart, s->behaviour);
+/* Allocates a new sensor_packet struct from a the pointer to
+ * the first byte of packetbuff. */
+static struct sensor_packet *packetbuff_to_sensor_packet(void * buf){
 }
 
+static void gen_sensor_val(uint8_t *arr, int len){
+    int i;
+    for (i = 0; i < len; i++){
+        arr[i] = random_rand() % MAX_TEMP;
+    }
+}
+
+static void print_sensor(struct sensor_data *s){
+    int i;
+    for (i = 0; i < 2; i++){
+        printf("T%d: %d, ", i, s->temp[i]);
+    }
+    for (i = 0; i < 2; i++){
+        printf("H%d: %d, ", i, s->heart[i]);
+    }
+
+    printf("B: %d\n", s->behaviour);
+}
 
 static void print_list(list_t l){
-    struct sensor_vals * s;
+    struct sensor_data *s;
     int cnt;
     printf("PRINTING LIST\n");
     for (s = list_head(l), cnt = 0; s != NULL; s = list_item_next(s), cnt++){
@@ -90,20 +120,12 @@ static void print_list(list_t l){
     printf("END OF LIST\n");
 }
 
-PROCESS_THREAD(init_process, ev, data){
-    PROCESS_BEGIN();
-    list_init(sensor_buff);
-    memb_init(&buff_memb);
-
-    process_start(&transmit_process, NULL);
-    process_start(&sensor_process, NULL);
-
-    PROCESS_END();
-}
-
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
+    list_init(sensor_buff);
+    memb_init(&buff_memb);
+
     PROCESS_BEGIN();
 
     static struct etimer et;
@@ -113,11 +135,11 @@ PROCESS_THREAD(sensor_process, ev, data)
         etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
-        struct sensor_vals* new_vals = memb_alloc(&buff_memb);
+        struct sensor_data* new_vals = memb_alloc(&buff_memb);
 
-        new_vals->temp = random_rand() % MAX_TEMP;
-        new_vals->heart = random_rand() % MAX_HEART;
-        new_vals->behaviour = random_rand() % MAX_BEHAVIOUR;
+        gen_sensor_val(new_vals->temp, 2); 
+        gen_sensor_val(new_vals->heart, 2);
+        gen_sensor_val(&new_vals->behaviour, 1);
 
         list_add(sensor_buff, new_vals);
 
@@ -127,27 +149,51 @@ PROCESS_THREAD(sensor_process, ev, data)
     PROCESS_END();
 }
 
+
+static void
+broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
+{
+    //broadcast packets are discarded.
+}
+
+static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
+static struct broadcast_conn broadcast;
+
 PROCESS_THREAD(transmit_process, ev, data)
 {
-    PROCESS_BEGIN();
     static struct etimer et;
+
+    PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
+    PROCESS_BEGIN();
+
+    broadcast_open(&broadcast, 129, &broadcast_call);
 
     while(1){
         printf("process TRANSMIT\n");
         etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
-        struct sensor_vals *s = list_head(sensor_buff); 
-        int i = 0;
+        struct sensor_data *s = list_head(sensor_buff); 
+        struct sensor_data *popped;
+        uint8_t i = 0;
 
         while (s != NULL && i < SENSOR_VALS_PER_PACKET){
             printf("TRANSMITTING: ");
             print_sensor(s);
             printf("\n");
 
-            memb_free(&buff_memb, list_pop(sensor_buff));
+            popped = list_pop(sensor_buff);
+            memcpy(tmp_pkt_buff + (i * sizeof(popped)) + 1,
+                    popped, sizeof(popped));
+            memb_free(&buff_memb, popped);
+
             s = list_head(sensor_buff); 
             i++;
+        }
+
+        if (i > 0){
+            tmp_pkt_buff[0] = i;
+            packetbuf_copyfrom(&tmp_pkt_buff, 1 + sizeof(struct sensor_data)*i);
         }
 
     }
