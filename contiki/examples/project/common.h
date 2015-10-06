@@ -25,4 +25,8 @@ struct sensor_packet{
     struct sensor_data data[SAMPLES_PER_PACKET];
 };
 
+struct routing_init{
+	uint8_t hop_nr;
+};
+
 #endif
