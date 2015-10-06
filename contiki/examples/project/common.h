@@ -14,15 +14,14 @@ struct packet{
     void *data;
 };
 
-struct sensor_data{
-    uint8_t temp[2];
-    uint8_t heart[2];
+struct sensor_sample{
+    uint8_t temp;
+    uint8_t heart;
     uint8_t behaviour;
 };
 
 struct sensor_packet{
-    uint8_t id;
-    struct sensor_data data[SAMPLES_PER_PACKET];
+    struct sensor_sample samples[SAMPLES_PER_PACKET];
 };
 
 struct routing_init{

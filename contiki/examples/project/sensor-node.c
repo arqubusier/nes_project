@@ -49,7 +49,7 @@
 #include "common.h"
 
 #define SAMPLE_RATE 1
-#define TRANSMIT_RATE 10 
+#define TRANSMIT_RATE 100 
 
 #define BUFF_SIZE 25 
 
@@ -64,34 +64,9 @@ PROCESS(transmit_process, "Transmit process");
 AUTOSTART_PROCESSES(&sensor_process, &transmit_process);
 /*---------------------------------------------------------------------------*/
 
-//TODO: error checking: count integrity, size etc...
-static void gen_sensor_data(struct sensor_data* data){
-    int i;
-    for (i = 0; i < sizeof(data->temp); i++){
-        data->temp[i] = random_rand() % 256;
-    }
-
-    for (i = 0; i < sizeof(data->temp); i++){
-        data->heart[i] = random_rand() % 256;
-    }
-
-    data->behaviour = random_rand() % 256;
-}
-
 #ifdef DEBUG
-void print_sensor_data(struct sensor_data *s){
-    int i;
-    for (i = 0; i < 2; i++){
-        printf("T%d: %d, ", i, s->temp[i]);
-    }
-    printf("\n");
-
-    for (i = 0; i < 2; i++){
-        printf("H%d: %d, ", i, s->heart[i]);
-    }
-    printf("\n");
-
-    printf("B: %d\n", s->behaviour);
+void print_sensor_sample(struct sensor_sample *s){
+    printf("T: %d, H: %d, B: %d\n", s->temp, s->heart, s->behaviour);
 }
 #endif
 
@@ -101,7 +76,7 @@ void print_sensor_packet(struct sensor_packet *sp){
     printf("PRINTING SENSOR PACKET\n");
     for (i = 0; i < SAMPLES_PER_PACKET; i++){
         printf("SAMPLE %d: ", i);
-        print_sensor_data(sp->data + i);
+        print_sensor_sample(sp->samples + i);
     }
     printf("END OF SENSOR PACKET\n");
 }
@@ -111,13 +86,17 @@ void print_sensor_packet(struct sensor_packet *sp){
 static void print_list(list_t l){
     struct sensor_packet *s;
     int cnt;
-    printf("PRINTING LIST\n");
     for (s = list_head(l), cnt = 0; s != NULL; s = list_item_next(s), cnt++){
         print_sensor_packet(s);
     }
-    printf("END OF LIST\n");
 }
 #endif
+
+static void gen_sensor_sample(struct sensor_sample* sample){
+    sample->temp = (uint8_t) random_rand() % 256;
+    sample->heart = (uint8_t) random_rand() % 256;
+    sample->behaviour = (uint8_t) random_rand() % 256;
+}
 
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
@@ -125,6 +104,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 #ifdef DEBUG
     struct sensor_packet *packet;
     packet = packetbuf_dataptr();
+    printf("RECIEVED PACKET:\n");
     print_sensor_packet(packet);
 #endif
 }
@@ -142,19 +122,17 @@ LIST(sensor_buff);
 
 /*---------------------------------------------------------------------------*/
 
-static uint8_t sensor_data_cnt = 0; 
+static uint8_t sample_cnt = 0; 
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
+    PROCESS_BEGIN();
 
     list_init(sensor_buff);
     memb_init(&buff_memb);
 
-    PROCESS_BEGIN();
-
     current_packet = memb_alloc(&buff_memb);
-    current_packet->id = SENSOR_DATA;
-    sensor_data_cnt = 0;
+    sample_cnt = 0;
 
 
     static struct etimer et;
@@ -164,25 +142,25 @@ PROCESS_THREAD(sensor_process, ev, data)
         etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
-        if (sensor_data_cnt == SAMPLES_PER_PACKET){
+        //add to current packet
+        gen_sensor_sample(&current_packet->samples[sample_cnt]);
+        #ifdef DEBUG
+        printf("NEW DATA\n");
+        print_sensor_sample(&current_packet->samples[sample_cnt]);
+        #endif
+        sample_cnt++;
+
+        if (sample_cnt == SAMPLES_PER_PACKET){
             //new packet
             list_add(sensor_buff, current_packet);
-            current_packet = memb_alloc(&buff_memb);
-            current_packet->id = SENSOR_DATA;
-            sensor_data_cnt = 0;
-            
-#ifdef DEBUG
+
+            #ifdef DEBUG
             print_list(sensor_buff);
-#endif
-        }
-        else{
-            //add to current packet
-            gen_sensor_data(&current_packet->data[sensor_data_cnt]);
-            sensor_data_cnt++;
-#ifdef DEBUG
-            printf("NEW DATA\n");
-            print_sensor_data(&current_packet->data[sensor_data_cnt]);
-#endif
+            #endif
+
+            //TODO: handle full buffer
+            current_packet = memb_alloc(&buff_memb);
+            sample_cnt = 0;
         }
     }
     
