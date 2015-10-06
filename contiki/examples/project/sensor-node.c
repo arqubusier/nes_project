@@ -56,7 +56,13 @@
 #define DEBUG
 
 
-
+/*A element to be used in a Contiki list, containting the exact number of
+ * sample data for one sensor_packet*/
+struct sensor_elem{
+    //the next pointer is needed because the struct is used in a Contiki List
+    struct sensor_elem *next;
+    struct sensor_sample samples[SAMPLES_PER_PACKET];
+};
 
 /*---------------------------------------------------------------------------*/
 PROCESS(sensor_process, "Sensor process");
@@ -71,12 +77,12 @@ void print_sensor_sample(struct sensor_sample *s){
 #endif
 
 #ifdef DEBUG
-void print_sensor_packet(struct sensor_packet *sp){
+void print_sensor_elem(struct sensor_elem *sp){
     int i;
     printf("PRINTING SENSOR PACKET\n");
     for (i = 0; i < SAMPLES_PER_PACKET; i++){
         printf("SAMPLE %d: ", i);
-        print_sensor_sample(sp->samples + i);
+        print_sensor_sample(&sp->samples[i]);
     }
     printf("END OF SENSOR PACKET\n");
 }
@@ -84,10 +90,9 @@ void print_sensor_packet(struct sensor_packet *sp){
 
 #ifdef DEBUG
 static void print_list(list_t l){
-    struct sensor_packet *s;
-    int cnt;
-    for (s = list_head(l), cnt = 0; s != NULL; s = list_item_next(s), cnt++){
-        print_sensor_packet(s);
+    struct sensor_elem *s;
+    for (s = list_head(l); s != NULL; s = list_item_next(s)){
+        print_sensor_elem(s);
     }
 }
 #endif
@@ -102,10 +107,10 @@ static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 #ifdef DEBUG
-    struct sensor_packet *packet;
-    packet = packetbuf_dataptr();
+    struct broadcast_message *msg;
+    msg = packetbuf_dataptr();
     printf("RECIEVED PACKET:\n");
-    print_sensor_packet(packet);
+    print_sensor_elem(msg);
 #endif
 }
 
@@ -114,9 +119,9 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
 static struct broadcast_conn broadcast;
 
-static struct sensor_packet* current_packet = NULL;
+static struct sensor_elem* current_elem = NULL;
 
-MEMB(buff_memb, struct sensor_packet, BUFF_SIZE);
+MEMB(buff_memb, struct sensor_elem, BUFF_SIZE);
 LIST(sensor_buff);
 //TODO Determine if needed: static bool is_adding_sensor = false;
 
@@ -131,35 +136,38 @@ PROCESS_THREAD(sensor_process, ev, data)
     list_init(sensor_buff);
     memb_init(&buff_memb);
 
-    current_packet = memb_alloc(&buff_memb);
+    current_elem = memb_alloc(&buff_memb);
     sample_cnt = 0;
 
 
     static struct etimer et;
     
+    /* Generate a new sample values, store them in a list buffer, and sleep.
+     * The buffer is used for caching purposes when out of coverage of the
+     * relay nodes. The oldest value is overwritten if the buffer becomes
+     * full.*/
     while(1){
         printf("process SENSOR\n");
         etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
-        //add to current packet
-        gen_sensor_sample(&current_packet->samples[sample_cnt]);
+        gen_sensor_sample(&current_elem->samples[sample_cnt]);
         #ifdef DEBUG
         printf("NEW DATA\n");
-        print_sensor_sample(&current_packet->samples[sample_cnt]);
+        print_sensor_sample(&current_elem->samples[sample_cnt]);
         #endif
         sample_cnt++;
 
         if (sample_cnt == SAMPLES_PER_PACKET){
-            //new packet
-            list_add(sensor_buff, current_packet);
+            //The current element is full, make a new element.
+            list_add(sensor_buff, current_elem);
 
             #ifdef DEBUG
             print_list(sensor_buff);
             #endif
 
             //TODO: handle full buffer
-            current_packet = memb_alloc(&buff_memb);
+            current_elem = memb_alloc(&buff_memb);
             sample_cnt = 0;
         }
     }
@@ -184,18 +192,18 @@ PROCESS_THREAD(transmit_process, ev, data)
         etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
-        struct sensor_packet *packet = list_head(sensor_buff);
+        struct sensor_elem *elem = list_head(sensor_buff);
         
-        if (packet != NULL){
+        if (elem != NULL){
 #ifdef DEBUG
             print_list(sensor_buff);
 #endif
             list_pop(sensor_buff); 
 
-            packetbuf_copyfrom(packet, sizeof(struct sensor_packet));
+            packetbuf_copyfrom(elem, sizeof(struct sensor_elem));
             broadcast_send(&broadcast);
 
-            memb_free(&buff_memb, packet);
+            memb_free(&buff_memb, elem);
         }
     }
     
