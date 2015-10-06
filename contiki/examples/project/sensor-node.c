@@ -56,7 +56,7 @@
 #define BUFF_SIZE_EXP 8
 #define MAX_PACKET_SIZE 128
 
-#define SENSOR_VALS_PER_PACKET 10//(MAX_PACKET_SIZE - 1)/5
+#define SENSOR_VALS_PER_PACKET 10 //((256 - 1)/5)
 
 struct sensor_data{
     uint8_t temp[2];
@@ -66,14 +66,10 @@ struct sensor_data{
 
 struct sensor_packet{
     uint8_t count;
-    struct sensor_data* data;
+    struct sensor_data *data;
 };
 
 
-static uint8_t tmp_pkt_buff[MAX_PACKET_SIZE];
-
-//TODO Determine if needed: static bool is_adding_sensor = false;
-MEMB(buff_memb, struct sensor_data, BUFF_SIZE);
 
 /*---------------------------------------------------------------------------*/
 PROCESS(sensor_process, "Sensor process");
@@ -81,12 +77,30 @@ PROCESS(transmit_process, "Transmit process");
 AUTOSTART_PROCESSES(&sensor_process, &transmit_process);
 /*---------------------------------------------------------------------------*/
 
+/* Returns the size, in bytes, of a serialized version of a sensor_packet */
+inline static size_t sensor_packet_size(struct sensor_packet *sp){
+    return sizeof(sp->count) + sp->count*sizeof(struct sensor_data);
+}
 
-LIST(sensor_buff);
+//TODO: error checking: count integrity, size etc...
+/* Assigns the fields of a sensor_packet struct from a serialized
+ * uint8_t array. Assumes that dest->data points to a sufficiently
+ * large memory section.*/
+static void deserialize_sensor_packet(struct sensor_packet *dest, uint8_t *src){
+    uint8_t c = *src;
+    dest->count = c;
+    memcpy(dest->data, src + 1, c*sizeof(struct sensor_data));
+}
 
-/* Allocates a new sensor_packet struct from a the pointer to
- * the first byte of packetbuff. */
-static struct sensor_packet *packetbuff_to_sensor_packet(void * buf){
+//TODO: check that dst is of correct size
+/* Converts a sensor packet to a uint8_t array for network transfer. */ 
+static void serialize_sensor_packet(uint8_t *dst, struct sensor_packet *src){
+    size_t l = sensor_packet_size(src);
+    if (sizeof(dst) == l){
+        printf("hej\n");
+        dst[0] = src->count;
+        memcpy(dst + 1, &src->data, l - 1);
+    }
 }
 
 static void gen_sensor_val(uint8_t *arr, int len){
@@ -101,11 +115,30 @@ static void print_sensor(struct sensor_data *s){
     for (i = 0; i < 2; i++){
         printf("T%d: %d, ", i, s->temp[i]);
     }
+    printf("\n");
+
     for (i = 0; i < 2; i++){
         printf("H%d: %d, ", i, s->heart[i]);
     }
+    printf("\n");
 
     printf("B: %d\n", s->behaviour);
+}
+
+static void print_sensor_packet(struct sensor_packet *sp){
+    int i;
+    printf("PRINTING SENSOR PACKET\n");
+    for (i = 0; i < sp->count; i++){
+        printf("Set %d: ", i);
+        print_sensor(sp->data + i);
+    }
+    printf("END OF SENSOR PACKET\n");
+}
+
+static void
+broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
+{
+
 }
 
 static void print_list(list_t l){
@@ -119,7 +152,17 @@ static void print_list(list_t l){
     }
     printf("END OF LIST\n");
 }
+/*---------------------------------------------------------------------------*/
 
+static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
+static struct broadcast_conn broadcast;
+
+static struct sensor_data tmp_sensor_arr[SENSOR_VALS_PER_PACKET];
+MEMB(buff_memb, struct sensor_data, BUFF_SIZE);
+LIST(sensor_buff);
+//TODO Determine if needed: static bool is_adding_sensor = false;
+
+/*---------------------------------------------------------------------------*/
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
@@ -150,17 +193,11 @@ PROCESS_THREAD(sensor_process, ev, data)
 }
 
 
-static void
-broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
-{
-    //broadcast packets are discarded.
-}
-
-static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
-static struct broadcast_conn broadcast;
-
 PROCESS_THREAD(transmit_process, ev, data)
 {
+    uint8_t packet_mem[MAX_PACKET_SIZE];
+    struct sensor_packet *s_packet_buff = (struct sensor_data) &packet_mem;
+
     static struct etimer et;
 
     PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
@@ -174,26 +211,26 @@ PROCESS_THREAD(transmit_process, ev, data)
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
         struct sensor_data *s = list_head(sensor_buff); 
-        struct sensor_data *popped;
         uint8_t i = 0;
 
         while (s != NULL && i < SENSOR_VALS_PER_PACKET){
-            printf("TRANSMITTING: ");
-            print_sensor(s);
-            printf("\n");
-
-            popped = list_pop(sensor_buff);
-            memcpy(tmp_pkt_buff + (i * sizeof(popped)) + 1,
-                    popped, sizeof(popped));
-            memb_free(&buff_memb, popped);
-
+            memcpy(s_packet_buff->data + i,
+                   list_pop(sensor_buff), sizeof(struct sensor_data));
             s = list_head(sensor_buff); 
             i++;
         }
 
+        print_sensor_packet(s_packet_buff);
+
         if (i > 0){
-            tmp_pkt_buff[0] = i;
-            packetbuf_copyfrom(&tmp_pkt_buff, 1 + sizeof(struct sensor_data)*i);
+            s_packet_buff.count = i;
+            uint8_t serialized[sensor_packet_size(s_packet_buff)];
+            serialize_sensor_packet(&s_packet_buff, &serialized);
+            packetbuf_copyfrom(&serialized, sizeof(serialized));
+
+            for (; i >=0; i--){
+                memb_free(&buff_memb, s_packet_buff + i);
+            }
         }
 
     }
