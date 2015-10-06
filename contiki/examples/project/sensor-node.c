@@ -46,26 +46,15 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define SAMPLE_RATE 5
-#define TRANSMIT_RATE 10
+#include "common.h"
+
+#define SAMPLE_RATE 1
+#define TRANSMIT_RATE 10 
 
 #define BUFF_SIZE 25 
-#define MAX_PACKET_SIZE 128
-
-#define SAMPLES_PER_PACKET 3
 
 #define DEBUG
 
-struct sensor_data{
-    uint8_t temp[2];
-    uint8_t heart[2];
-    uint8_t behaviour;
-};
-
-struct sensor_packet{
-    uint8_t id;
-    struct sensor_data data[SAMPLES_PER_PACKET];
-};
 
 
 
@@ -120,13 +109,11 @@ void print_sensor_packet(struct sensor_packet *sp){
 
 #ifdef DEBUG
 static void print_list(list_t l){
-    struct sensor_data *s;
+    struct sensor_packet *s;
     int cnt;
     printf("PRINTING LIST\n");
     for (s = list_head(l), cnt = 0; s != NULL; s = list_item_next(s), cnt++){
-        printf("Cnt: %d, ", cnt);
-        print_sensor_data(s);
-        printf("\n");
+        print_sensor_packet(s);
     }
     printf("END OF LIST\n");
 }
@@ -147,7 +134,6 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
 static struct broadcast_conn broadcast;
 
-static uint8_t sensor_data_cnt = 0; 
 static struct sensor_packet* current_packet = NULL;
 
 MEMB(buff_memb, struct sensor_packet, BUFF_SIZE);
@@ -156,23 +142,20 @@ LIST(sensor_buff);
 
 /*---------------------------------------------------------------------------*/
 
-static inline void new_packet(struct sensor_packet *pkt, uint8_t *cnt) 
-{
-    pkt = memb_alloc(&buff_memb);
-    pkt->id = 255;
-    *cnt = 0;
-}
+static uint8_t sensor_data_cnt = 0; 
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
+
     list_init(sensor_buff);
     memb_init(&buff_memb);
 
+    PROCESS_BEGIN();
+
     current_packet = memb_alloc(&buff_memb);
-    current_packet->id = 255;
+    current_packet->id = SENSOR_DATA;
     sensor_data_cnt = 0;
 
-    PROCESS_BEGIN();
 
     static struct etimer et;
     
@@ -185,7 +168,7 @@ PROCESS_THREAD(sensor_process, ev, data)
             //new packet
             list_add(sensor_buff, current_packet);
             current_packet = memb_alloc(&buff_memb);
-            current_packet->id = 255;
+            current_packet->id = SENSOR_DATA;
             sensor_data_cnt = 0;
             
 #ifdef DEBUG
@@ -197,7 +180,7 @@ PROCESS_THREAD(sensor_process, ev, data)
             gen_sensor_data(&current_packet->data[sensor_data_cnt]);
             sensor_data_cnt++;
 #ifdef DEBUG
-            printf("NEW DATA");
+            printf("NEW DATA\n");
             print_sensor_data(&current_packet->data[sensor_data_cnt]);
 #endif
         }
