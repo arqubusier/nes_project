@@ -21,6 +21,7 @@ struct sensor_sample{
 };
 
 struct sensor_packet{
+    uint8_t type;
     struct sensor_sample samples[SAMPLES_PER_PACKET];
 };
 
@@ -28,4 +29,6 @@ struct routing_init{
 	uint8_t hop_nr;
 };
 
+void print_sensor_sample(struct sensor_sample *s);
+void print_sensor_packet(struct sensor_packet *p);
 #endif

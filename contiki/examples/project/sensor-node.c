@@ -48,8 +48,8 @@
 
 #include "common.h"
 
-#define SAMPLE_RATE 1
-#define TRANSMIT_RATE 100 
+#define SAMPLE_RATE 5
+#define TRANSMIT_RATE 2
 
 #define BUFF_SIZE 25 
 
@@ -71,12 +71,6 @@ AUTOSTART_PROCESSES(&sensor_process, &transmit_process);
 /*---------------------------------------------------------------------------*/
 
 #ifdef DEBUG
-void print_sensor_sample(struct sensor_sample *s){
-    printf("T: %d, H: %d, B: %d\n", s->temp, s->heart, s->behaviour);
-}
-#endif
-
-#ifdef DEBUG
 void print_sensor_elem(struct sensor_elem *sp){
     int i;
     printf("PRINTING SENSOR PACKET\n");
@@ -86,9 +80,20 @@ void print_sensor_elem(struct sensor_elem *sp){
     }
     printf("END OF SENSOR PACKET\n");
 }
-#endif
 
-#ifdef DEBUG
+void print_sensor_sample(struct sensor_sample *s){
+    printf("T: %d, H: %d, B: %d\n", s->temp, s->heart, s->behaviour);
+}
+
+void print_sensor_packet(struct sensor_packet *p){
+    int i;
+    printf("PRINTING SENSOR PACKET\n");
+    for (i = 0; i < SAMPLES_PER_PACKET; i++){
+        printf("SAMPLE %d: ", i);
+        print_sensor_sample(&p->samples[i]);
+    }
+    printf("END OF SENSOR PACKET\n");
+}
 static void print_list(list_t l){
     struct sensor_elem *s;
     for (s = list_head(l); s != NULL; s = list_item_next(s)){
@@ -107,10 +112,10 @@ static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 #ifdef DEBUG
-    struct broadcast_message *msg;
+    struct sensor_packet *msg;
     msg = packetbuf_dataptr();
     printf("RECIEVED PACKET:\n");
-    print_sensor_elem(msg);
+    print_sensor_packet(msg);
 #endif
 }
 
@@ -178,29 +183,32 @@ PROCESS_THREAD(sensor_process, ev, data)
 
 PROCESS_THREAD(transmit_process, ev, data)
 {
-    static struct etimer et;
-
     PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
     PROCESS_BEGIN();
+
+    static struct etimer et;
 
     broadcast_open(&broadcast, 129, &broadcast_call);
 
     while(1){
-#ifdef DEBUG
+        #ifdef DEBUG
         printf("process TRANSMIT\n");
-#endif
+        #endif
         etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
         struct sensor_elem *elem = list_head(sensor_buff);
         
         if (elem != NULL){
-#ifdef DEBUG
+            #ifdef DEBUG
             print_list(sensor_buff);
-#endif
+            #endif
             list_pop(sensor_buff); 
-
-            packetbuf_copyfrom(elem, sizeof(struct sensor_elem));
+            
+            static struct sensor_packet packet;
+            packet.type = SENSOR_DATA;
+            memcpy(&packet.samples, &elem->samples, sizeof(elem->samples));
+            packetbuf_copyfrom(&packet, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
 
             memb_free(&buff_memb, elem);
