@@ -38,7 +38,7 @@ struct routing_init{
 
 struct init_packet{
     uint8_t type;
-    struct routing_init hop_nr;
+    struct routing_init routing;
 };
 
 void print_sensor_sample(struct sensor_sample *s);
