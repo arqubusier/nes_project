@@ -4,11 +4,12 @@
 #define MAX_PACKET_SIZE 	128
 #define SAMPLES_PER_PACKET 	3
 
-#define INITIAL_HOP_NR 		100
+#define SEQN_INITIAL		0
+
+#define HOP_NR_INITIAL 		100
 
 #define SENSOR_DATA 		0
 #define HOP_CONF 			1
-#define HOP_RECONF 			2
 #define AGGREGATED_DATA 	3
 #define ACK				 	4
 
@@ -28,11 +29,8 @@ struct sensor_packet{
     struct sensor_sample samples[SAMPLES_PER_PACKET];
 };
 
-struct reconfig_packet{
-    uint8_t type;
-};
-
 struct routing_init{
+	uint8_t seqn;
 	uint8_t hop_nr;
 };
 
