@@ -84,7 +84,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
 	PROCESS_BEGIN();
-	powertrace_start(CLOCK_SECOND * 2);
+	powertrace_start(CLOCK_SECOND * 2, "RN_P_");
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
 
