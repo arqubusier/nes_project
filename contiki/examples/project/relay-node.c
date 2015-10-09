@@ -45,15 +45,17 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 		case SENSOR_DATA: //Vipul
 			;
 			struct sensor_packet *sp = (struct sensor_packet *) m; 		
-            linkaddr_copy(&agg_data_buffer.data[spc++].address, from);
-			agg_data_buffer.data[spc++].seqno = 0;
-			memcpy(agg_data_buffer.data[spc++].samples,
+            linkaddr_copy(&agg_data_buffer.data[spc].address, from);
+			agg_data_buffer.data[spc].seqno = 0;
+			memcpy(agg_data_buffer.data[spc].samples,
                     sp->samples,  sizeof(sp->samples));
 				/* create a sensor_data LIST .
                  * copy the incoming sensor_sample packets into the list
                  * together with seqn and address.
                  * copy the full list into the agg_packet*/
-				printf("sensor_packet received, cnt %d\n", spc);   				 
+			printf("sensor_packet received, cnt: %d\n", spc);	 
+            print_sensor_packet(sp);
+            spc++;
 				
  			if (spc==SENSOR_DATA_PER_PACKET){
                 agg_data_to_be_sent = agg_data_buffer; //copy data to buffer

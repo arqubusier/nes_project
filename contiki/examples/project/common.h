@@ -53,6 +53,19 @@ struct agg_packet{
      struct sensor_data data[SENSOR_DATA_PER_PACKET];
 };
 
-void print_sensor_sample(struct sensor_sample *s);
-void print_sensor_packet(struct sensor_packet *p);
+void print_sensor_sample(struct sensor_sample *s){
+    printf("T: %d, H: %d, B: %d\n", s->temp, s->heart, s->behaviour);
+}
+
+void print_sensor_packet(struct sensor_packet *p){
+    int i;
+    printf("PRINTING SENSOR PACKET\n");
+    printf("seqno: %d\n", p->seqno);
+    for (i = 0; i < SAMPLES_PER_PACKET; i++){
+        printf("SAMPLE %d: ", i);
+        print_sensor_sample(&p->samples[i]);
+    }
+    printf("END OF SENSOR PACKET\n");
+}
+
 #endif
