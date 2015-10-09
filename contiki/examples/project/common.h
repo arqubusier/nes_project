@@ -4,8 +4,9 @@
 #define MAX_PACKET_SIZE 	128
 #define SAMPLES_PER_PACKET 	3
 
+#define INITIAL_HOP_NR 		100
+#define SENSOR_DATA_PER_PACKET  4
 #define SEQN_INITIAL		0
-
 #define HOP_NR_INITIAL 		100
 
 #define SENSOR_DATA 		0
@@ -24,8 +25,10 @@ struct sensor_sample{
     uint8_t behaviour;
 };
 
-struct sensor_packet{
+struct sensor_packet{          // for receiving the packets
     uint8_t type;
+    //for identifying the order of measurement sample at a sensor node       
+    uint8_t seqno;
     struct sensor_sample samples[SAMPLES_PER_PACKET];
 };
 
@@ -37,6 +40,17 @@ struct routing_init{
 struct init_packet{
     uint8_t type;
     struct routing_init routing;
+};
+
+struct sensor_data{
+    linkaddr_t address;
+    uint8_t seqno;
+    struct sensor_sample samples[SAMPLES_PER_PACKET];
+};
+
+struct agg_packet{
+     uint8_t type;
+     struct sensor_data data[SENSOR_DATA_PER_PACKET];
 };
 
 void print_sensor_sample(struct sensor_sample *s);

@@ -42,6 +42,8 @@
 #include "lib/random.h"
 #include "net/rime/rime.h"
 
+#include "powertrace.h"
+
 #include <stdio.h> /* For printf() */
 #include <stdbool.h>
 #include <string.h>
@@ -130,6 +132,8 @@ MEMB(buff_memb, struct sensor_elem, BUFF_SIZE);
 LIST(sensor_buff);
 //TODO Determine if needed: static bool is_adding_sensor = false;
 
+static uint8_t seqno = 0;
+
 /*---------------------------------------------------------------------------*/
 
 static uint8_t sample_cnt = 0; 
@@ -205,16 +209,18 @@ PROCESS_THREAD(transmit_process, ev, data)
             #endif
             list_pop(sensor_buff); 
             
-            static struct sensor_packet packet;
-            packet.type = SENSOR_DATA;
-            memcpy(&packet.samples, &elem->samples, sizeof(elem->samples));
-            packetbuf_copyfrom(&packet, sizeof(struct sensor_packet));
+            static struct sensor_packet sp;
+            sp.type = SENSOR_DATA;
+            sp.seqno = seqno;
+            memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
+            packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
 
             memb_free(&buff_memb, elem);
+            seqno++;
         }
     }
-    
+
     PROCESS_END();
 }
 

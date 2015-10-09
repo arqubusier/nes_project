@@ -9,15 +9,18 @@
 
 #define EVENT_TIMER_NULL	0
 #define EVENT_TIMER_CONF	1
+#define EVENT_TIMER_AGG         2
+static uint8_t timer_event = EVENT_TIMER_NULL;
+static struct etimer et_rnd_routing, et_rnd_agg ;
 
 static uint8_t hop_nr = HOP_NR_INITIAL;
-static uint8_t timer_event = EVENT_TIMER_NULL;
-static struct etimer et_rnd_routing;
 
 static uint8_t conf_seqn = SEQN_INITIAL;
 
+static int spc=0;       // Sensor packet counter
 /* This holds the broadcast structure. */
 static struct broadcast_conn broadcast;
+static struct agg_packet agg_data_buffer, agg_data_to_be_sent;
 
 /*---------------------------------------------------------------------------*/
 /* Declare the broadcast process */
@@ -40,7 +43,35 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
 	switch (m->type){
 		case SENSOR_DATA: //Vipul
+			;
+			struct sensor_packet *sp = (struct sensor_packet *) m; 		
+            linkaddr_copy(&agg_data_buffer.data[spc++].address, from);
+			agg_data_buffer.data[spc++].seqno = 0;
+			memcpy(agg_data_buffer.data[spc++].samples,
+                    sp->samples,  sizeof(sp->samples));
+				/* create a sensor_data LIST .
+                 * copy the incoming sensor_sample packets into the list
+                 * together with seqn and address.
+                 * copy the full list into the agg_packet*/
+				printf("sensor_packet received, cnt %d\n", spc);   				 
+				
+ 			if (spc==SENSOR_DATA_PER_PACKET){
+                agg_data_to_be_sent = agg_data_buffer; //copy data to buffer
 
+				// reinitialize the agg_data_buffer
+				agg_data_buffer = (const struct agg_packet){ 0 };
+                //reinitialize the Sensor packet counter
+				spc=0;
+
+				PROCESS_CONTEXT_BEGIN(&broadcast_process);
+					etimer_set(&et_rnd_agg,
+                            (CLOCK_SECOND * 5 +
+                             random_rand() % (CLOCK_SECOND * 5))/10);
+				PROCESS_CONTEXT_END(&broadcast_process);
+				timer_event = EVENT_TIMER_AGG;
+				printf("agg_data_to_be_sent\n");   				 
+			};
+				
 			break;
 
 		case HOP_CONF: ; // Set the hop_nr of the relay node
@@ -91,7 +122,6 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	while(1) {
 
 		PROCESS_WAIT_EVENT();
-
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// I will (have to) change the timer_event from mutex to switch
 		// because I can have multiple timers in the same time
@@ -112,6 +142,14 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
 			printf("RN_S_SQN_%d\n", conf_seqn); // relay node - send - sequence nr
 			printf("Hop_nr: %d\n", hop_nr);
+		}
+
+		if(ev == PROCESS_EVENT_TIMER && timer_event == EVENT_TIMER_AGG){
+			
+//			packetbuf_copyfrom(&agg_data_to_be_sent, sizeof(struct agg_packet));
+			//broadcast_send(&broadcast);
+
+			timer_event = EVENT_TIMER_NULL;
 		}
 
 	}
