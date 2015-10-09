@@ -42,6 +42,8 @@
 #include "lib/random.h"
 #include "net/rime/rime.h"
 
+#include "powertrace.h"
+
 #include <stdio.h> /* For printf() */
 #include <stdbool.h>
 #include <string.h>
@@ -138,6 +140,8 @@ PROCESS_THREAD(sensor_process, ev, data)
 {
     PROCESS_BEGIN();
 
+    powertrace;
+
     list_init(sensor_buff);
     memb_init(&buff_memb);
 
@@ -205,16 +209,16 @@ PROCESS_THREAD(transmit_process, ev, data)
             #endif
             list_pop(sensor_buff); 
             
-            static struct sensor_packet packet;
-            packet.type = SENSOR_DATA;
-            memcpy(&packet.samples, &elem->samples, sizeof(elem->samples));
-            packetbuf_copyfrom(&packet, sizeof(struct sensor_packet));
+            static struct sensor_packet sp;
+            sp.type = SENSOR_DATA;
+            memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
+            packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
 
             memb_free(&buff_memb, elem);
         }
     }
-    
+
     PROCESS_END();
 }
 

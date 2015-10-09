@@ -9,13 +9,15 @@
 #define EVENT_TIMER_NULL	0
 #define EVENT_TIMER_RECONF 	1
 #define EVENT_TIMER_CONF	2
-
+#define EVENT_TIMER_AGG         3
 static uint8_t hop_nr = INITIAL_HOP_NR;
 static uint8_t timer_event = EVENT_TIMER_NULL;
-static struct etimer et_rnd_routing, et_rnd_reconfig;
+static struct etimer et_rnd_routing, et_rnd_reconfig, et_rnd_agg ;
 
+static int spc=0;       // Sensor packet counter
 /* This holds the broadcast structure. */
 static struct broadcast_conn broadcast;
+static struct agg_packet agg_data_buffer, agg_data_to_be_sent;
 
 /*---------------------------------------------------------------------------*/
 /* Declare the broadcast process */
@@ -38,7 +40,35 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
 	switch (m->type){
 		case SENSOR_DATA: //Vipul
+			;
+			struct sensor_packet *sp = (struct sensor_packet *) m; 		
+            linkaddr_copy(&agg_data_buffer.data[spc++].address, from);
+			agg_data_buffer.data[spc++].seqno = 0;
+			memcpy(agg_data_buffer.data[spc++].samples,
+                    sp->samples,  sizeof(sp->samples));
+				/* create a sensor_data LIST .
+                 * copy the incoming sensor_sample packets into the list
+                 * together with seqn and address.
+                 * copy the full list into the agg_packet*/
+				printf("sensor_packet received, cnt %d\n", spc);   				 
+				
+ 			if (spc==SENSOR_DATA_PER_PACKET){
+                agg_data_to_be_sent = agg_data_buffer; //copy data to buffer
 
+				// reinitialize the agg_data_buffer
+				agg_data_buffer = {0};
+                //reinitialize the Sensor packet counter
+				spc=0;
+
+				PROCESS_CONTEXT_BEGIN(&broadcast_process);
+					etimer_set(&et_rnd_agg,
+                            (CLOCK_SECOND * 5 +
+                             random_rand() % (CLOCK_SECOND * 5))/10);
+				PROCESS_CONTEXT_END(&broadcast_process);
+				timer_event = EVENT_TIMER_AGG;
+				printf("agg_data_to_be_sent\n");   				 
+				};
+				
 			break;
 
 		case HOP_CONF: ; // Set the hop_nr of the relay node
@@ -94,7 +124,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	while(1) {
 
 		PROCESS_WAIT_EVENT();
-
+		
 		if(ev == PROCESS_EVENT_TIMER && timer_event == EVENT_TIMER_RECONF){
 			struct reconfig_packet reconf_msg;
 
@@ -113,6 +143,14 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			init_msg.routing.hop_nr = hop_nr;
 
 			packetbuf_copyfrom(&init_msg, sizeof(struct init_packet));
+			broadcast_send(&broadcast);
+
+			timer_event = EVENT_TIMER_NULL;
+		}
+
+		if(ev == PROCESS_EVENT_TIMER && timer_event == EVENT_TIMER_AGG){
+			
+			packetbuf_copyfrom(&agg_data_to_be_sent, sizeof(struct agg_packet));
 			broadcast_send(&broadcast);
 
 			timer_event = EVENT_TIMER_NULL;
