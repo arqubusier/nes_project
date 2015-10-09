@@ -132,6 +132,8 @@ MEMB(buff_memb, struct sensor_elem, BUFF_SIZE);
 LIST(sensor_buff);
 //TODO Determine if needed: static bool is_adding_sensor = false;
 
+static uint8_t seqno = 0;
+
 /*---------------------------------------------------------------------------*/
 
 static uint8_t sample_cnt = 0; 
@@ -139,8 +141,6 @@ static uint8_t sample_cnt = 0;
 PROCESS_THREAD(sensor_process, ev, data)
 {
     PROCESS_BEGIN();
-
-    powertrace;
 
     list_init(sensor_buff);
     memb_init(&buff_memb);
@@ -211,11 +211,13 @@ PROCESS_THREAD(transmit_process, ev, data)
             
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
+            sp.seqno = seqno;
             memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
             packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
 
             memb_free(&buff_memb, elem);
+            seqno++;
         }
     }
 
