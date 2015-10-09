@@ -83,19 +83,6 @@ void print_sensor_elem(struct sensor_elem *sp){
     printf("END OF SENSOR PACKET\n");
 }
 
-void print_sensor_sample(struct sensor_sample *s){
-    printf("T: %d, H: %d, B: %d\n", s->temp, s->heart, s->behaviour);
-}
-
-void print_sensor_packet(struct sensor_packet *p){
-    int i;
-    printf("PRINTING SENSOR PACKET\n");
-    for (i = 0; i < SAMPLES_PER_PACKET; i++){
-        printf("SAMPLE %d: ", i);
-        print_sensor_sample(&p->samples[i]);
-    }
-    printf("END OF SENSOR PACKET\n");
-}
 static void print_list(list_t l){
     struct sensor_elem *s;
     for (s = list_head(l); s != NULL; s = list_item_next(s)){
@@ -205,7 +192,7 @@ PROCESS_THREAD(transmit_process, ev, data)
         
         if (elem != NULL){
             #ifdef DEBUG
-            print_list(sensor_buff);
+            //print_list(sensor_buff);
             #endif
             list_pop(sensor_buff); 
             
@@ -215,6 +202,10 @@ PROCESS_THREAD(transmit_process, ev, data)
             memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
             packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
+
+            #ifdef DEBUG
+            print_sensor_packet(&sp);
+            #endif
 
             memb_free(&buff_memb, elem);
             seqno++;
