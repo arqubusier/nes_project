@@ -12,7 +12,15 @@
 #define RND_TIME_MIN 500
 #define RND_TIME_VAR 500 
 
-static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_sensor = 0, flg_ack_agg = 0;
+#define SENSOR_ACK_LIST_SIZE 10
+
+struct sensor_ack_elem{
+    struct sensor_ack_elem *next;
+    linkaddr_t addr;
+    uint8_t seqno;
+};
+
+static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_agg = 0;
 static int overwrite_send = 1, overwrite_rcv = 1;
 
 static struct etimer et_rnd, et_rnd_ack;
@@ -27,6 +35,9 @@ static int spc = 0;       // Sensor packet counter
 static struct broadcast_conn broadcast;
 static struct unicast_conn unicast;
 static struct agg_packet agg_data_buffer, agg_data_to_be_sent, agg_data_received;
+
+MEMB(sensor_ack_memb, struct sensor_ack_elem, 2 * SENSOR_DATA_PER_PACKET);
+LIST(sensor_ack_list);
 
 /*---------------------------------------------------------------------------*/
 /* Declare the broadcast and unicast processes */
@@ -52,15 +63,24 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 		case SENSOR_DATA: //Vipul
 				
 			if (spc < SENSOR_DATA_PER_PACKET){
+			 	printf("sensor_packet received, cnt: %d\n", spc);	 
+
+                //save to buffer
 				struct sensor_packet *sp = (struct sensor_packet *) m; 		
 			 	linkaddr_copy(&agg_data_buffer.data[spc].address, from);
 			 	agg_data_buffer.data[spc].seqno = 0;
 			 	memcpy(agg_data_buffer.data[spc].samples, sp->samples,  sizeof(sp->samples));
-			 				
-			 	printf("sensor_packet received, cnt: %d\n", spc);	 
-			 	print_sensor_packet(sp);
 			 	spc++;
+			 				
+			 	print_sensor_packet(sp);
 			 	
+                // Send an acknolwedge to the sensor node we received the packet
+                // from.
+                struct sensor_ack_elem *se = memb_alloc(&sensor_ack_memb);
+			 	linkaddr_copy(&se->addr, from);
+                se->seqno = sp->seqno;
+                list_add(sensor_ack_list, se);
+                
 			 	if (etimer_expired(&et_rnd_ack)){
 			 		PROCESS_CONTEXT_BEGIN(&unicast_process);
 			 		etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
@@ -220,7 +240,16 @@ PROCESS_THREAD(unicast_process, ev, data)
 			  flg_ack_agg = 0;
 			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 		  }
-		  else if (flg_ack_sensor){
+		  else if (list_length(sensor_ack_list) > 0){
+                struct sensor_ack_elem *se = list_pop(sensor_ack_list);
+                struct ack_sensor_packet pkt;
+                pkt.type = ACK_SENSOR;
+                pkt.seqno = se->seqno;
+
+                //transmit
+                packetbuf_copyfrom(&pkt, sizeof(struct ack_sensor_packet));
+                unicast_send(&unicast, &se->addr);
+                memb_free(&sensor_ack_memb, se);
 		  				
 			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 		  }
