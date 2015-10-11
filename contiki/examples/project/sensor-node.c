@@ -64,6 +64,7 @@
 struct sensor_elem{
     //the next pointer is needed because the struct is used in a Contiki List
     struct sensor_elem *next;
+    uint8_t seqno;
     struct sensor_sample samples[SAMPLES_PER_PACKET];
 };
 
@@ -71,6 +72,17 @@ struct sensor_elem{
 PROCESS(sensor_process, "Sensor process");
 PROCESS(transmit_process, "Transmit process");
 AUTOSTART_PROCESSES(&sensor_process, &transmit_process);
+/*---------------------------------------------------------------------------*/
+
+static struct sensor_elem* current_elem = NULL;
+
+MEMB(buff_memb, struct sensor_elem, BUFF_SIZE);
+LIST(sensor_buff);
+
+static uint8_t timeout_cnt = 0;
+
+static uint8_t seqno = 0;
+
 /*---------------------------------------------------------------------------*/
 
 #ifdef DEBUG
@@ -102,10 +114,13 @@ static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 #ifdef DEBUG
-    struct sensor_packet *msg;
+    /*struct sensor_packet *msg;
     msg = packetbuf_dataptr();
     printf("RECIEVED PACKET:\n");
-    print_sensor_packet(msg);
+    print_sensor_packet(msg);*/
+	struct packet *m;
+	m = packetbuf_dataptr();
+	printf("RECIEVED PACKET: %d\n", m->type);
 #endif
 }
 
@@ -119,27 +134,17 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 	m = packetbuf_dataptr();
 
 	if (m->type == ACK_SENSOR){
-        should_send_next = true;
+		struct ack_sensor_packet *asp = (struct ack_sensor_packet *) m;
+		struct sensor_elem *se = list_head(sensor_buff);
+		
+		if (se !=NULL && asp->seqno == se->seqno){
+			should_send_next = true;
+			printf("ACK received\n");
+		}
 	}
 }
 
-/*---------------------------------------------------------------------------*/
 
-static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
-static const struct unicast_callbacks unicast_callbacks = {recv_uc};
-static struct broadcast_conn broadcast;
-static struct unicast_conn unicast;
-
-static struct sensor_elem* current_elem = NULL;
-
-MEMB(buff_memb, struct sensor_elem, BUFF_SIZE);
-LIST(sensor_buff);
-
-static uint8_t timeout_cnt = 0;
-
-static uint8_t seqno = 0;
-
-/*---------------------------------------------------------------------------*/
 
 static uint8_t sample_cnt = 0; 
 
@@ -166,6 +171,7 @@ PROCESS_THREAD(sensor_process, ev, data)
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
         gen_sensor_sample(&current_elem->samples[sample_cnt]);
+        
         #ifdef DEBUG
         printf("NEW DATA\n");
         print_sensor_sample(&current_elem->samples[sample_cnt]);
@@ -175,6 +181,7 @@ PROCESS_THREAD(sensor_process, ev, data)
         if (sample_cnt == SAMPLES_PER_PACKET){
             //The current element is full, make a new element.
             list_add(sensor_buff, current_elem);
+            current_elem->seqno = seqno++;
             sample_cnt = 0;
 
             #ifdef DEBUG
@@ -193,11 +200,18 @@ PROCESS_THREAD(sensor_process, ev, data)
     PROCESS_END();
 }
 
+/*---------------------------------------------------------------------------*/
+
+static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
+static const struct unicast_callbacks unicast_callbacks = {recv_uc};
+static struct broadcast_conn broadcast;
+static struct unicast_conn unicast;
 
 void exit_handler(struct broadcast_conn *bc, struct unicast_conn *uc){
     broadcast_close(bc);
     unicast_close(uc);
 }
+
 PROCESS_THREAD(transmit_process, ev, data)
 {
     PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
@@ -206,7 +220,7 @@ PROCESS_THREAD(transmit_process, ev, data)
     static struct etimer et;
 
     broadcast_open(&broadcast, 129, &broadcast_call);
-    unicast_open(&unicast, 129, &unicast_callbacks);
+    unicast_open(&unicast, 146, &unicast_callbacks);
 
     /* Transmit the oldest packet in the buffer. A new packet is selected
      * for transmission if the timeout counter reaches a maximum or if an
@@ -220,6 +234,17 @@ PROCESS_THREAD(transmit_process, ev, data)
 
         struct sensor_elem *elem = list_head(sensor_buff);
         
+        /*
+         * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         * I think that you should move the 
+         * 	if (should_send_next)
+         * to the beginning, because now when you set the value
+         * to true, first you send the same packet once again
+         * before deleting it from the list!
+         * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         */
+        
         if (elem != NULL){
             if (timeout_cnt == TIMEOUT_MAX){
                 should_send_next = true;
@@ -230,7 +255,7 @@ PROCESS_THREAD(transmit_process, ev, data)
             
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
-            sp.seqno = seqno;
+            sp.seqno = elem->seqno;
             memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
             packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
@@ -241,7 +266,6 @@ PROCESS_THREAD(transmit_process, ev, data)
             if (should_send_next){
                 list_pop(sensor_buff); 
                 memb_free(&buff_memb, elem);
-                seqno++;
                 timeout_cnt = 0;
                 should_send_next = false;
             }

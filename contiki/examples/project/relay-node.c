@@ -16,7 +16,7 @@ struct sensor_ack_elem{
 };
 
 static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_agg = 0;
-static int overwrite_send = 1, overwrite_rcv = 1;
+static int overwrite_send = 1, overwrite_fwd = 1;
 
 static struct etimer et_rnd, et_rnd_ack;
 
@@ -71,6 +71,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 			 	memcpy(agg_data_buffer.data[spc].samples, sp->samples,  sizeof(sp->samples));
 			 	spc++;
 			 				
+			 	printf("Buffer counter: %d\n", spc-1);
 			 	print_sensor_packet(sp);
 			 	
                 // Send an acknolwedge to the sensor node we received the packet
@@ -102,7 +103,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 				overwrite_send = 0;
 				flg_agg_send = 1;
 
-				printf("agg_data_to_be_sent\n");   		
+				printf("agg_data_to_be_sent, type: %d\n", agg_data_to_be_sent.type);   		
 				if (etimer_expired(&et_rnd)){
 					PROCESS_CONTEXT_BEGIN(&broadcast_process);
 					etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
@@ -211,7 +212,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
 	PROCESS_BEGIN();
-	powertrace_start(CLOCK_SECOND * 0.2, "RN_P_");
+	//powertrace_start(CLOCK_SECOND * 0.2, "RN_P_");
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
 
@@ -241,6 +242,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 				packetbuf_copyfrom(&agg_data_to_be_sent, sizeof(struct agg_packet));
 				broadcast_send(&broadcast);
 				
+				printf("RN_S_AGG, type: %d\n", agg_data_to_be_sent.type);
 				//flg_agg_send = 0;
 				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			}
@@ -266,7 +268,7 @@ PROCESS_THREAD(unicast_process, ev, data)
     
   PROCESS_BEGIN();
 
-  unicast_open(&unicast, 129, &unicast_call);
+  unicast_open(&unicast, 146, &unicast_call);
 
   while(1) {
 	  PROCESS_WAIT_EVENT();
@@ -286,6 +288,8 @@ PROCESS_THREAD(unicast_process, ev, data)
                 pkt.type = ACK_SENSOR;
                 pkt.seqno = se->seqno;
 
+                printf("ACK sent %d.%d\n", se->addr.u8[0], se->addr.u8[1]);
+                
                 //transmit
                 packetbuf_copyfrom(&pkt, sizeof(struct ack_sensor_packet));
                 unicast_send(&unicast, &se->addr);

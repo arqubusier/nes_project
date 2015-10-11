@@ -35,11 +35,9 @@ static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct packet *m;
-
-	/* 	The packetbuf_dataptr() returns a pointer to the first data byte
-		in the received packet. */
 	m = packetbuf_dataptr();
-
+	printf("RECIEVED PACKET: %d\n", m->type);
+	
 	switch (m->type){
 		case AGGREGATED_DATA:
 			;
@@ -86,14 +84,14 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
 	PROCESS_BEGIN();
-	powertrace_start(CLOCK_SECOND * 2, "BS_P_");
+	//powertrace_start(CLOCK_SECOND * 2, "BS_P_");
 
-	static struct etimer et_init;
-	struct init_packet init_msg;
-	
 	broadcast_open(&broadcast, 129, &broadcast_call);
-	unicast_open(&unicast, 129, &unicast_call);
-
+	unicast_open(&unicast, 146, &unicast_call);
+	
+	static struct etimer et_init;
+	static struct init_packet init_msg;
+	
 	// Send the first initialization message after 2 seconds
 	etimer_set(&et_init, CLOCK_SECOND * 2);
 
@@ -111,7 +109,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			etimer_set(&et_init, CLOCK_SECOND * 20);
 
 			printf("BS_S_CONF_SQN_%d\n", conf_seqn); // base station - sent - sequence nr
-			printf("Init sent!\n");
+			printf("Init sent: %d!\n", init_msg.routing.hop_nr);
 		}
 	}
 

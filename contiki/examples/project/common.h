@@ -85,7 +85,7 @@ void print_sensor_packet(struct sensor_packet *p){
         printf("SAMPLE %d: ", i);
         print_sensor_sample(&p->samples[i]);
     }
-    printf("END OF SENSOR PACKET\n");
+    printf("END OF SENSOR PACKET\n\n");
 }
 
 #endif
