@@ -55,6 +55,7 @@
 
 #define BUFF_SIZE 25 
 
+#define TIMEOUT_MAX 4
 #define DEBUG
 
 
@@ -108,16 +109,33 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 #endif
 }
 
+static bool should_send_next = false;
+
+static void
+recv_uc(struct unicast_conn *c, const linkaddr_t *from)
+{
+	struct packet *m;
+
+	m = packetbuf_dataptr();
+
+	if (m->type == ACK_SENSOR){
+        should_send_next = true;
+	}
+}
+
 /*---------------------------------------------------------------------------*/
 
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
+static const struct unicast_callbacks unicast_callbacks = {recv_uc};
 static struct broadcast_conn broadcast;
+static struct unicast_conn unicast;
 
 static struct sensor_elem* current_elem = NULL;
 
 MEMB(buff_memb, struct sensor_elem, BUFF_SIZE);
 LIST(sensor_buff);
-//TODO Determine if needed: static bool is_adding_sensor = false;
+
+static uint8_t timeout_cnt = 0;
 
 static uint8_t seqno = 0;
 
@@ -157,14 +175,18 @@ PROCESS_THREAD(sensor_process, ev, data)
         if (sample_cnt == SAMPLES_PER_PACKET){
             //The current element is full, make a new element.
             list_add(sensor_buff, current_elem);
+            sample_cnt = 0;
 
             #ifdef DEBUG
             print_list(sensor_buff);
             #endif
 
-            //TODO: handle full buffer
+            /*list is manipulated in two different user threads.
+             * this is ok, since they are not preemptive.*/
+            if (list_length(sensor_buff) == BUFF_SIZE){
+                memb_free(&buff_memb, list_pop(sensor_buff));
+            }
             current_elem = memb_alloc(&buff_memb);
-            sample_cnt = 0;
         }
     }
     
@@ -172,15 +194,23 @@ PROCESS_THREAD(sensor_process, ev, data)
 }
 
 
+void exit_handler(struct broadcast_conn *bc, struct unicast_conn *uc){
+    broadcast_close(bc);
+    unicast_close(uc);
+}
 PROCESS_THREAD(transmit_process, ev, data)
 {
-    PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
+    PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
     PROCESS_BEGIN();
 
     static struct etimer et;
 
     broadcast_open(&broadcast, 129, &broadcast_call);
+    unicast_open(&unicast, 129, &unicast_callbacks);
 
+    /* Transmit the oldest packet in the buffer. A new packet is selected
+     * for transmission if the timeout counter reaches a maximum or if an
+     * if an acknowledgement has been received.*/
     while(1){
         #ifdef DEBUG
         printf("process TRANSMIT\n");
@@ -191,10 +221,12 @@ PROCESS_THREAD(transmit_process, ev, data)
         struct sensor_elem *elem = list_head(sensor_buff);
         
         if (elem != NULL){
+            if (timeout_cnt == TIMEOUT_MAX){
+                should_send_next = true;
+            }
             #ifdef DEBUG
             //print_list(sensor_buff);
             #endif
-            list_pop(sensor_buff); 
             
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
@@ -206,9 +238,13 @@ PROCESS_THREAD(transmit_process, ev, data)
             #ifdef DEBUG
             print_sensor_packet(&sp);
             #endif
-
-            memb_free(&buff_memb, elem);
-            seqno++;
+            if (should_send_next){
+                list_pop(sensor_buff); 
+                memb_free(&buff_memb, elem);
+                seqno++;
+                timeout_cnt = 0;
+                should_send_next = false;
+            }
         }
     }
 
