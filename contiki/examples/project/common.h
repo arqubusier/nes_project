@@ -12,7 +12,8 @@
 #define SENSOR_DATA 		0
 #define HOP_CONF 			1
 #define AGGREGATED_DATA 	3
-#define ACK				 	4
+#define ACK_AGG			 	4
+#define ACK_SENSOR			5
 
 struct packet{
     uint8_t type;
@@ -50,7 +51,20 @@ struct sensor_data{
 
 struct agg_packet{
      uint8_t type;
+     linkaddr_t address;
+     uint8_t seqno;
      struct sensor_data data[SENSOR_DATA_PER_PACKET];
+};
+
+struct ack_agg_packet{
+	uint8_t type;
+	linkaddr_t address;
+	uint8_t seqno;
+};
+
+struct ack_sensor_packet{
+	uint8_t type;
+	uint8_t seqno;
 };
 
 void print_sensor_sample(struct sensor_sample *s){
