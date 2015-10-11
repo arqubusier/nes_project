@@ -15,6 +15,11 @@
 #define ACK_AGG			 	4
 #define ACK_SENSOR			5
 
+// random timer to be set to a value between RND_TIME_MIN and RND_TIME_MIN + RND_TIME_VAR
+// in milliseconds (ms)
+#define RND_TIME_MIN 500
+#define RND_TIME_VAR 500 
+
 struct packet{
     uint8_t type;
     void *data;
@@ -53,6 +58,7 @@ struct agg_packet{
      uint8_t type;
      linkaddr_t address;
      uint8_t seqno;
+     uint8_t hop_nr;
      struct sensor_data data[SENSOR_DATA_PER_PACKET];
 };
 

@@ -7,26 +7,24 @@
 
 #include "common.h"
 
-// random timer to be set to a value between RND_TIME_MIN and RND_TIME_MIN + RND_TIME_VAR
-// in milliseconds (ms)
-#define RND_TIME_MIN 500
-#define RND_TIME_VAR 500 
-
 static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_sensor = 0, flg_ack_agg = 0;
-static int overwrite_send = 1, overwrite_rcv = 1;
+static int overwrite_send = 1, overwrite_fwd = 1;
 
 static struct etimer et_rnd, et_rnd_ack;
 
+static uint8_t seqno = 0;
 static uint8_t hop_nr = HOP_NR_INITIAL;
-
 static uint8_t conf_seqn = SEQN_INITIAL;
 
 static int spc = 0;       // Sensor packet counter
 
+static struct agg_packet agg_data_buffer, agg_data_to_be_sent, agg_data_fwd;
+static struct ack_agg_packet ack_agg_fwd;
+static linkaddr_t addr_ack_agg_fwd;
+
 /* This holds the broadcast structure. */
 static struct broadcast_conn broadcast;
 static struct unicast_conn unicast;
-static struct agg_packet agg_data_buffer, agg_data_to_be_sent, agg_data_received;
 
 /*---------------------------------------------------------------------------*/
 /* Declare the broadcast and unicast processes */
@@ -53,8 +51,9 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 				
 			if (spc < SENSOR_DATA_PER_PACKET){
 				struct sensor_packet *sp = (struct sensor_packet *) m; 		
+				
 			 	linkaddr_copy(&agg_data_buffer.data[spc].address, from);
-			 	agg_data_buffer.data[spc].seqno = 0;
+			 	agg_data_buffer.data[spc].seqno = sp->seqno;
 			 	memcpy(agg_data_buffer.data[spc].samples, sp->samples,  sizeof(sp->samples));
 			 				
 			 	printf("sensor_packet received, cnt: %d\n", spc);	 
@@ -71,6 +70,11 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
  			if (spc == SENSOR_DATA_PER_PACKET && overwrite_send){
                 agg_data_to_be_sent = agg_data_buffer; //copy data to buffer
 
+                agg_data_to_be_sent.type = AGGREGATED_DATA;
+                agg_data_to_be_sent.seqno = seqno;
+                agg_data_to_be_sent.hop_nr = hop_nr;
+                linkaddr_copy(&agg_data_to_be_sent.address, &linkaddr_node_addr);
+                
 				// reinitialize the agg_data_buffer
 				agg_data_buffer = (const struct agg_packet){ 0 };
                 //reinitialize the Sensor packet counter
@@ -98,11 +102,11 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
 			if (hop_nr > init_msg->routing.hop_nr + 1){
 				hop_nr = init_msg->routing.hop_nr + 1;
-
+					
 				flg_conf = 1;
 			}
 
-			printf("RN_R_SQN_%d\n", conf_seqn); // relay node - receive - sequence nr
+			printf("RN_R_CONF_SQN_%d\n", conf_seqn); // relay node - receive - sequence nr
 			printf("Hop_nr: %d\n", hop_nr);
 			if (etimer_expired(&et_rnd)){
 				PROCESS_CONTEXT_BEGIN(&broadcast_process);
@@ -113,19 +117,35 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 			break;
 
 		case AGGREGATED_DATA:
-
-			flg_agg_fwd = 1;
-			flg_ack_agg = 1;
+			;
+			struct agg_packet *agg_data_tmp = (struct agg_packet *) m;
 			
-			if (etimer_expired(&et_rnd)){
-				PROCESS_CONTEXT_BEGIN(&broadcast_process);
-				etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
-				PROCESS_CONTEXT_END(&broadcast_process);
-			}
-			if (etimer_expired(&et_rnd_ack)){
-				PROCESS_CONTEXT_BEGIN(&unicast_process);
-				etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
-				PROCESS_CONTEXT_END(&unicast_process);
+			if (agg_data_tmp->hop_nr > hop_nr && overwrite_fwd){
+			
+				agg_data_fwd = *agg_data_tmp;
+				agg_data_fwd.hop_nr = hop_nr;
+				
+				flg_agg_fwd = 1;
+				overwrite_fwd = 0;
+				
+				ack_agg_fwd.type = ACK_AGG;
+				linkaddr_copy(&ack_agg_fwd.address, &agg_data_tmp->address);
+				ack_agg_fwd.seqno = agg_data_tmp->seqno;
+				
+				linkaddr_copy(&addr_ack_agg_fwd, from);
+				
+				flg_ack_agg = 1;
+			
+				if (etimer_expired(&et_rnd)){
+					PROCESS_CONTEXT_BEGIN(&broadcast_process);
+					etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
+					PROCESS_CONTEXT_END(&broadcast_process);
+				}
+				if (etimer_expired(&et_rnd_ack)){
+					PROCESS_CONTEXT_BEGIN(&unicast_process);
+					etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
+					PROCESS_CONTEXT_END(&unicast_process);
+				}
 			}
 			break;
 	}
@@ -140,7 +160,20 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 	m = packetbuf_dataptr();
 
 	if (m->type == ACK_AGG){
+		struct ack_agg_packet *ack_agg_rcv = (struct ack_agg_packet *) m;
 		
+		if (flg_agg_send){
+			if (linkaddr_cmp(&agg_data_to_be_sent.address, &ack_agg_rcv->address) && (agg_data_to_be_sent.seqno == ack_agg_rcv->seqno)){
+				flg_agg_send = 0;
+				overwrite_send = 1;
+			}
+		}
+		else if (flg_agg_fwd){
+			if (linkaddr_cmp(&agg_data_fwd.address, &ack_agg_rcv->address) && (agg_data_fwd.seqno == ack_agg_rcv->seqno)){
+				flg_agg_fwd = 0;
+				overwrite_fwd = 1;
+			}
+		}		
 	}
 }
 
@@ -149,7 +182,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
    is received. We pass a pointer to this structure in the
    broadcast_open() call below. */
 static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
-static const struct unicast_callbacks unicast_callbacks = {recv_uc};
+static const struct unicast_callbacks unicast_call = {recv_uc};
 
 /*---------------------------------------------------------------------------*/
 
@@ -177,23 +210,27 @@ PROCESS_THREAD(broadcast_process, ev, data)
 				packetbuf_copyfrom(&init_msg, sizeof(struct init_packet));
 				broadcast_send(&broadcast);
 
-				printf("RN_S_SQN_%d\n", conf_seqn); // relay node - send - sequence nr
+				printf("RN_S_CONF_SQN_%d\n", conf_seqn); // relay node - send - sequence nr
 				printf("Hop_nr: %d\n", hop_nr);
 			
 				flg_conf = 0;
 				etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			}
-			else if (flg_agg_fwd){
-				
-				flg_agg_fwd = 0;
-				etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
-			}
 			else if (flg_agg_send){
+				
 				packetbuf_copyfrom(&agg_data_to_be_sent, sizeof(struct agg_packet));
 				broadcast_send(&broadcast);
 				
-				flg_agg_send = 0;
-				etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
+				//flg_agg_send = 0;
+				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
+			}
+			else if (flg_agg_fwd){
+				
+				packetbuf_copyfrom(&agg_data_fwd, sizeof(struct agg_packet));
+				broadcast_send(&broadcast);
+				
+				//flg_agg_fwd = 0;
+				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			}
 		}
 
@@ -209,7 +246,7 @@ PROCESS_THREAD(unicast_process, ev, data)
     
   PROCESS_BEGIN();
 
-  unicast_open(&unicast, 129, &unicast_callbacks);
+  unicast_open(&unicast, 129, &unicast_call);
 
   while(1) {
 	  PROCESS_WAIT_EVENT();
@@ -217,6 +254,9 @@ PROCESS_THREAD(unicast_process, ev, data)
 	  if (etimer_expired(&et_rnd_ack)){
 		  if (flg_ack_agg){
 		  				
+			  packetbuf_copyfrom(&ack_agg_fwd, sizeof(struct ack_agg_packet));
+			  unicast_send(&unicast, &addr_ack_agg_fwd);
+			  
 			  flg_ack_agg = 0;
 			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 		  }
