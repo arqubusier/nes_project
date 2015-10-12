@@ -3,9 +3,9 @@
 #include "powertrace.h"
 #include "lib/random.h"
 
-#include "common.h"
-
 #include <stdio.h>
+
+#include "common.h"
 
 /* This holds the broadcast structure. */
 static struct broadcast_conn broadcast;
@@ -44,10 +44,10 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 			struct agg_packet *agg_data_tmp = (struct agg_packet *) m;
 		
 			int i, j;
-			for (i = 0; i <= SENSOR_DATA_PER_PACKET; i++){
-				printf("BS_R_DATA_ADDR %d.%d SEQNO %d DATA ", 
+			for (i = 0; i < SENSOR_DATA_PER_PACKET; i++){
+				printf("BS_R_DATA_ADDR_%d.%d_SQN_%d_DATA_", 
 						agg_data_tmp->data[i].address.u8[0], agg_data_tmp->data[i].address.u8[1], agg_data_tmp->data[i].seqno);
-				for (j = 0; j <= SAMPLES_PER_PACKET; j++){
+				for (j = 0; j < SAMPLES_PER_PACKET; j++){
 					printf("%d %d %d ", 
 							agg_data_tmp->data[i].samples[j].temp, agg_data_tmp->data[i].samples[j].heart, agg_data_tmp->data[i].samples[j].behaviour);
 				}
@@ -87,7 +87,6 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	//powertrace_start(CLOCK_SECOND * 2, "BS_P_");
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
-	unicast_open(&unicast, 146, &unicast_call);
 	
 	static struct etimer et_init;
 	static struct init_packet init_msg;
@@ -108,7 +107,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
 			etimer_set(&et_init, CLOCK_SECOND * 20);
 
-			printf("BS_S_CONF_SQN_%d\n", conf_seqn); // base station - sent - sequence nr
+			printf("BS_S_CONF_SQN_%d_HOP_%d\n", init_msg.routing.seqn, init_msg.routing.hop_nr); // base station - sent - sequence nr
 			printf("Init sent: %d!\n", init_msg.routing.hop_nr);
 		}
 	}
@@ -122,7 +121,7 @@ PROCESS_THREAD(unicast_process, ev, data)
     
   PROCESS_BEGIN();
 
-  unicast_open(&unicast, 129, &unicast_call);
+  unicast_open(&unicast, 146, &unicast_call);
 
   while(1) {
 	  PROCESS_WAIT_EVENT();
@@ -135,6 +134,8 @@ PROCESS_THREAD(unicast_process, ev, data)
 			  
 			  flg_ack_agg = 0;
 			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
+			  
+			  printf("BS_S_ACK_ADDR_%d.%d_SEQN_%d", addr_ack_agg_fwd.u8[0], addr_ack_agg_fwd.u8[1], ack_agg_fwd.seqno);
 		  }
 	  }
   }
