@@ -234,20 +234,12 @@ PROCESS_THREAD(transmit_process, ev, data)
 
         struct sensor_elem *elem = list_head(sensor_buff);
         
-        /*
-         * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         * I think that you should move the 
-         * 	if (should_send_next)
-         * to the beginning, because now when you set the value
-         * to true, first you send the same packet once again
-         * before deleting it from the list!
-         * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         */
-        
         if (elem != NULL){
-            if (timeout_cnt == TIMEOUT_MAX){
-                should_send_next = true;
+            if (timeout_cnt == TIMEOUT_MAX || should_send_next){
+                list_pop(sensor_buff); 
+                memb_free(&buff_memb, elem);
+                timeout_cnt = 0;
+                should_send_next = false;
             }
             #ifdef DEBUG
             //print_list(sensor_buff);
@@ -263,12 +255,8 @@ PROCESS_THREAD(transmit_process, ev, data)
             #ifdef DEBUG
             print_sensor_packet(&sp);
             #endif
-            if (should_send_next){
-                list_pop(sensor_buff); 
-                memb_free(&buff_memb, elem);
-                timeout_cnt = 0;
-                should_send_next = false;
-            }
+
+            timeout_cnt++;
         }
     }
 
