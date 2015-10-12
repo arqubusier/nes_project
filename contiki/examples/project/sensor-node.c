@@ -51,7 +51,7 @@
 #include "common.h"
 
 #define SAMPLE_RATE 5
-#define TRANSMIT_RATE 2
+#define TRANSMIT_RATE 3
 
 #define BUFF_SIZE 25 
 
@@ -226,24 +226,27 @@ PROCESS_THREAD(transmit_process, ev, data)
      * for transmission if the timeout counter reaches a maximum or if an
      * if an acknowledgement has been received.*/
     while(1){
+        etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
+        PROCESS_WAIT_UNTIL(etimer_expired(&et));
         #ifdef DEBUG
         printf("process TRANSMIT\n");
         #endif
-        etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
-        PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
         struct sensor_elem *elem = list_head(sensor_buff);
         
-        if (elem != NULL){
-            if (timeout_cnt == TIMEOUT_MAX || should_send_next){
-                list_pop(sensor_buff); 
-                memb_free(&buff_memb, elem);
+        if (elem != NULL && (timeout_cnt == TIMEOUT_MAX || should_send_next)){
+                printf("next packet\n");
+                memb_free(&buff_memb, list_pop(sensor_buff));
+                elem = list_head(sensor_buff);
                 timeout_cnt = 0;
                 should_send_next = false;
-            }
+        }
+
+        if (elem != NULL){
             #ifdef DEBUG
             //print_list(sensor_buff);
             #endif
+            printf("process TRANSMIT 1\n");
             
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
@@ -257,6 +260,7 @@ PROCESS_THREAD(transmit_process, ev, data)
             #endif
 
             timeout_cnt++;
+            printf("process TRANSMIT 2\n");
         }
     }
 
