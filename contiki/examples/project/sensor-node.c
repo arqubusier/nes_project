@@ -50,8 +50,12 @@
 
 #include "common.h"
 
-#define SAMPLE_RATE 5
-#define TRANSMIT_RATE 3
+#define SAMPLE_RATE 7
+/* Parameters for determining the transmission rate. Each time a new transmission
+* is made the sensor node will wait between RND_TIME_MIN and
+* RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
+#define RND_TIME_SENSOR_MIN 3000
+#define RND_TIME_SENSOR_VAR 3000
 
 #define BUFF_SIZE 25 
 
@@ -226,7 +230,8 @@ PROCESS_THREAD(transmit_process, ev, data)
      * for transmission if the timeout counter reaches a maximum or if an
      * if an acknowledgement has been received.*/
     while(1){
-        etimer_set(&et, CLOCK_SECOND*TRANSMIT_RATE);
+		etimer_set(&et, (CLOCK_SECOND * RND_TIME_SENSOR_MIN +
+                    random_rand() % (CLOCK_SECOND * RND_TIME_SENSOR_VAR))/1000);
         PROCESS_WAIT_UNTIL(etimer_expired(&et));
         #ifdef DEBUG
         printf("process TRANSMIT\n");
@@ -243,11 +248,6 @@ PROCESS_THREAD(transmit_process, ev, data)
         }
 
         if (elem != NULL){
-            #ifdef DEBUG
-            //print_list(sensor_buff);
-            #endif
-            printf("process TRANSMIT 1\n");
-            
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
             sp.seqno = elem->seqno;
@@ -260,14 +260,15 @@ PROCESS_THREAD(transmit_process, ev, data)
             #endif
 
             timeout_cnt++;
+
             printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_", linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], sp.seqno);
+
             int j;
             for (j = 0; j < SAMPLES_PER_PACKET; j++){
             	printf("%d %d %d ", 
             			sp.samples[j].temp, sp.samples[j].heart, sp.samples[j].behaviour);
             }
             printf("\n");
-            printf("process TRANSMIT 2\n");
         }
     }
 
