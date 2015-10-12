@@ -91,14 +91,15 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
  			if (spc == SENSOR_DATA_PER_PACKET && overwrite_send){
                 agg_data_to_be_sent = agg_data_buffer; //copy data to buffer
 
-                agg_data_to_be_sent.type = AGGREGATED_DATA;
                 agg_data_to_be_sent.seqno = seqno;
                 agg_data_to_be_sent.hop_nr = hop_nr;
                 linkaddr_copy(&agg_data_to_be_sent.address, &linkaddr_node_addr);
+                agg_data_to_be_sent.type = AGGREGATED_DATA;
                 
 				// reinitialize the agg_data_buffer
 				agg_data_buffer = (const struct agg_packet){ 0 };
-                //reinitialize the Sensor packet counter
+                
+				//reinitialize the Sensor packet counter
 				spc = 0;
 				overwrite_send = 0;
 				flg_agg_send = 1;
@@ -116,6 +117,8 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 		case HOP_CONF: ; // Set the hop_nr of the relay node
 			struct init_packet *init_msg = (struct init_packet *) m;
 
+			printf("RN_SEQN my: %d, rec: %d\n", conf_seqn, init_msg->routing.seqn);
+			
 			if (conf_seqn != init_msg->routing.seqn){
 				hop_nr = HOP_NR_INITIAL;
 				conf_seqn = init_msg->routing.seqn;
@@ -123,10 +126,10 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 
 			if (hop_nr > init_msg->routing.hop_nr + 1){
 				hop_nr = init_msg->routing.hop_nr + 1;
-					
+				
 				flg_conf = 1;
 			}
-
+			
 			printf("RN_R_CONF_SQN_%d\n", conf_seqn); // relay node - receive - sequence nr
 			printf("Hop_nr: %d\n", hop_nr);
 			if (etimer_expired(&et_rnd)){
