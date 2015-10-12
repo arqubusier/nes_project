@@ -74,7 +74,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 			 	printf("Buffer counter: %d\n", spc-1);
 			 	print_sensor_packet(sp);
 
-			 	printf("RN_R_SENSPACK_ADDR_%d.%d_SQN_%d", from->u8[0], from->u8[1], sp->seqno);
+			 	printf("RN_R_SPA_ADDR_%d.%d_SQN_%d", from->u8[0], from->u8[1], sp->seqno);
 			 	
                 // Send an acknolwedge to the sensor node we received the packet
                 // from.
@@ -130,7 +130,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 				flg_conf = 1;
 			}
 			
-			printf("RN_R_CONF_SQN_%d_HOP_%d\n", conf_seqn, init_msg->routing.hop_nr); // relay node - receive - sequence nr
+			printf("RN_R_CON_SQN_%d_HOP_%d\n", conf_seqn, init_msg->routing.hop_nr); // relay node - receive - sequence nr
 			printf("Hop_nr: %d\n", hop_nr);
 			if (etimer_expired(&et_rnd)){
 				PROCESS_CONTEXT_BEGIN(&broadcast_process);
@@ -160,7 +160,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 				
 				flg_ack_agg = 1;
 				
-				printf("RN_R_AGGDATA_ADDR_%d.%d_SQN_%d\n", agg_data_tmp->address.u8[0], agg_data_tmp->address.u8[1], agg_data_tmp->seqno);
+				printf("RN_R_DAT_ADDR_%d.%d_SQN_%d\n", agg_data_tmp->address.u8[0], agg_data_tmp->address.u8[1], agg_data_tmp->seqno);
 			
 				if (etimer_expired(&et_rnd)){
 					PROCESS_CONTEXT_BEGIN(&broadcast_process);
@@ -188,7 +188,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 	if (m->type == ACK_AGG){
 		struct ack_agg_packet *ack_agg_rcv = (struct ack_agg_packet *) m;
 		
-		printf("RN_R_AGGACK_ADDR_%d.%d_SQN_%d\n", ack_agg_rcv->address.u8[0], ack_agg_rcv->address.u8[1], ack_agg_rcv->seqno);
+		printf("RN_R_ACK_ADDR_%d.%d_SQN_%d\n", ack_agg_rcv->address.u8[0], ack_agg_rcv->address.u8[1], ack_agg_rcv->seqno);
 		
 		if (flg_agg_send){
 			if (linkaddr_cmp(&agg_data_to_be_sent.address, &ack_agg_rcv->address) && (agg_data_to_be_sent.seqno == ack_agg_rcv->seqno)){
@@ -238,7 +238,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 				packetbuf_copyfrom(&init_msg, sizeof(struct init_packet));
 				broadcast_send(&broadcast);
 
-				printf("RN_S_CONF_SQN_%d_HOP_%d\n", init_msg.routing.seqn, init_msg.routing.hop_nr);
+				printf("RN_S_CON_SQN_%d_HOP_%d\n", init_msg.routing.seqn, init_msg.routing.hop_nr);
 				printf("Hop_nr: %d\n", hop_nr);
 			
 				flg_conf = 0;
@@ -249,7 +249,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 				packetbuf_copyfrom(&agg_data_to_be_sent, sizeof(struct agg_packet));
 				broadcast_send(&broadcast);
 				
-				printf("RN_S_AGGDATA_ADDR_%d.%d_SQN_%d\n", agg_data_to_be_sent.address.u8[0], agg_data_to_be_sent.address.u8[1], agg_data_to_be_sent.seqno);
+				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_data_to_be_sent.address.u8[0], agg_data_to_be_sent.address.u8[1], agg_data_to_be_sent.seqno);
 				//flg_agg_send = 0;
 				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			}
@@ -258,7 +258,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 				packetbuf_copyfrom(&agg_data_fwd, sizeof(struct agg_packet));
 				broadcast_send(&broadcast);
 				
-				printf("RN_S_AGGDATA_ADDR_%d.%d_SQN_%d\n", agg_data_to_be_sent.address.u8[0], agg_data_to_be_sent.address.u8[1], agg_data_to_be_sent.seqno);
+				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_data_to_be_sent.address.u8[0], agg_data_to_be_sent.address.u8[1], agg_data_to_be_sent.seqno);
 				//flg_agg_fwd = 0;
 				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			}
@@ -290,7 +290,7 @@ PROCESS_THREAD(unicast_process, ev, data)
 			  flg_ack_agg = 0;
 			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			  
-			  printf("RN_S_AGGACK_ADDR_%d.%d_SQN_%d\n", addr_ack_agg_fwd.u8[0], addr_ack_agg_fwd.u8[1], ack_agg_fwd.seqno);
+			  printf("RN_S_ACK_ADDR_%d.%d_SQN_%d\n", addr_ack_agg_fwd.u8[0], addr_ack_agg_fwd.u8[1], ack_agg_fwd.seqno);
 		  }
 		  else if (list_length(sensor_ack_list) > 0){
                 struct sensor_ack_elem *se = list_pop(sensor_ack_list);
@@ -307,7 +307,7 @@ PROCESS_THREAD(unicast_process, ev, data)
 		  				
 			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			  
-			  printf("RN_S_SENSACK_ADDR_%d.%d_SQN_%d\n", se->addr.u8[0], se->addr.u8[1], pkt.seqno);
+			  printf("RN_S_SAC_ADDR_%d.%d_SQN_%d\n", se->addr.u8[0], se->addr.u8[1], pkt.seqno);
 		  }
 	  }
   }
