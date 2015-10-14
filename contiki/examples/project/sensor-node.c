@@ -112,7 +112,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 		
 		if (se !=NULL && asp->seqno == se->seqno){
 			should_send_next = true;
-			printf("SN_R_ACK_SQN_%d\n", se->seqno);
+			printf("SN_R_SAC_SQN_%d\n", se->seqno);
 		}
 	}
 }
@@ -231,7 +231,8 @@ PROCESS_THREAD(transmit_process, ev, data)
 
             timeout_cnt++;
 
-            printf("SN_S_DATA_ADDR_%d.%d_SQN_%d_DATA_", linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], sp.seqno);
+            printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_", linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], sp.seqno);
+
             int j;
             for (j = 0; j < SAMPLES_PER_PACKET; j++){
             	printf("%d %d %d ", 
