@@ -20,6 +20,10 @@
 #define RND_TIME_MIN 500
 #define RND_TIME_VAR 500 
 
+#define SN_TX_POWER 15
+#define RN_TX_POWER 31
+#define BS_TX_POWER 31
+
 struct packet{
     uint8_t type;
     void *data;

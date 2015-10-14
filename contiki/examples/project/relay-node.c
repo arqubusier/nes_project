@@ -2,6 +2,7 @@
 #include "lib/random.h"
 #include "net/rime/rime.h"
 #include "powertrace.h"
+#include "dev/cc2420/cc2420.h"
 
 #include <stdio.h>
 
@@ -220,6 +221,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
 	PROCESS_BEGIN();
 	//powertrace_start(CLOCK_SECOND * 0.2, "RN_P_");
+    cc2420_set_txpower(RN_TX_POWER);
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
 
