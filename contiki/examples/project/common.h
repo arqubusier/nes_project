@@ -2,7 +2,7 @@
 #define COMMON_H
 
 #define MAX_PACKET_SIZE 	128
-#define SAMPLES_PER_PACKET 	3
+#define SAMPLES_PER_PACKET 	5
 
 #define INITIAL_HOP_NR 		100
 #define SENSOR_DATA_PER_PACKET  4
@@ -20,6 +20,7 @@
 #define RND_TIME_MIN 500
 #define RND_TIME_VAR 500 
 
+//The time between routing configurations in seconds (s)
 #define RECONFIG_TIMER 200
 
 #define SN_TX_POWER 15

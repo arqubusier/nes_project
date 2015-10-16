@@ -19,12 +19,13 @@
 
 #include "common.h"
 
-#define SAMPLE_RATE 7
+/* The rate at which sensor samples are generated in seconds (s). */
+#define SAMPLE_RATE 12
 /* Parameters for determining the transmission rate. Each time a new transmission
 * is made the sensor node will wait between RND_TIME_MIN and
 * RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
-#define SENSOR_SHORT_TX_MIN 3000
-#define SENSOR_SHORT_TX_VAR 3000
+#define SENSOR_SHORT_TX_MIN 1000
+#define SENSOR_SHORT_TX_VAR 1000
 #define SENSOR_LONG_TX_MIN 3000
 #define SENSOR_LONG_TX_VAR 3000
 
@@ -91,10 +92,6 @@ static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 #ifdef DEBUG
-    /*struct sensor_packet *msg;
-    msg = packetbuf_dataptr();
-    printf("RECIEVED PACKET:\n");
-    print_sensor_packet(msg);*/
 	struct packet *m;
 	m = packetbuf_dataptr();
 	printf("RECIEVED PACKET: %d\n", m->type);
@@ -228,9 +225,7 @@ PROCESS_THREAD(transmit_process, ev, data)
     
     struct sensor_elem *elem = NULL;
 
-    /* Transmit the oldest packet in the buffer. A new packet is selected
-     * for transmission if the timeout counter reaches a maximum or if an
-     * if an acknowledgement has been received.*/
+    /* Try to transmit the oldest packet in the buffer.*/
     while(1){
         printf("SENSOR NODE TX PROCESS\n");
         //Check when and if we will try to transmit again.
@@ -269,17 +264,16 @@ PROCESS_THREAD(transmit_process, ev, data)
                 packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
                 broadcast_send(&broadcast);
 
+                //print data for simulation analysis
                 printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_",
                         linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
                         sp.seqno);
-
                 int j;
                 for (j = 0; j < SAMPLES_PER_PACKET; j++){
                 	printf("%d %d %d ", 
                 			sp.samples[j].temp,
                             sp.samples[j].heart, sp.samples[j].behaviour);
                 }
-
                 printf("\n");
                 
                 #ifdef DEBUG
