@@ -107,7 +107,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			packetbuf_copyfrom(&init_msg, sizeof(struct init_packet));
 			broadcast_send(&broadcast);
 
-			etimer_set(&et_init, CLOCK_SECOND * 20);
+			etimer_set(&et_init, CLOCK_SECOND * RECONFIG_TIMER);
 
 			printf("BS_S_CON_SQN_%d_HOP_%d\n", init_msg.routing.seqn, init_msg.routing.hop_nr); // base station - sent - sequence nr
 			printf("Init sent: %d!\n", init_msg.routing.hop_nr);

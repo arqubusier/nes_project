@@ -19,12 +19,7 @@
 
 #include "common.h"
 
-#define SAMPLE_RATE 7
-/* Parameters for determining the transmission rate. Each time a new transmission
-* is made the sensor node will wait between RND_TIME_MIN and
-* RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
-#define RND_TIME_SENSOR_MIN 3000
-#define RND_TIME_SENSOR_VAR 3000
+
 
 #define BUFF_SIZE 25 
 
