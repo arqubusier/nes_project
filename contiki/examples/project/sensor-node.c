@@ -122,10 +122,17 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 static struct etimer et_tx;
 
 static inline void set_tx_timer(bool is_in_range){
+
     if(is_in_range){
+        #ifdef DEBUG
+        printf("short timer\n");
+        #endif
         etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_SHORT_TX_MIN +
                     random_rand() % (CLOCK_SECOND * SENSOR_SHORT_TX_VAR))/1000);
     }else{
+        #ifdef DEBUG
+        printf("long timer\n");
+        #endif
         etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_LONG_TX_MIN +
                     random_rand() % (CLOCK_SECOND * SENSOR_LONG_TX_VAR))/1000);
 
@@ -181,7 +188,9 @@ PROCESS_THREAD(sensor_process, ev, data)
             }
 
             if (etimer_expired(&et_tx)){
+                PROCESS_CONTEXT_BEGIN(&transmit_process);
                 set_tx_timer(true);
+                PROCESS_CONTEXT_END(&transmit_process);
             }
 
             current_elem = memb_alloc(&buff_memb);
@@ -223,10 +232,6 @@ PROCESS_THREAD(transmit_process, ev, data)
     set_tx_timer(true);
     while(1){
         PROCESS_WAIT_UNTIL(etimer_expired(&et_tx));
-        #ifdef DEBUG
-        printf("process TRANSMIT\n");
-        #endif
-
         elem = list_head(sensor_buff);
 
         if (elem != NULL){
@@ -243,6 +248,9 @@ PROCESS_THREAD(transmit_process, ev, data)
             }
             
             //transmit
+            #ifdef DEBUG
+            printf("SENSOR NODE TRANSMITTING\n");
+            #endif
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
             sp.seqno = elem->seqno;
@@ -262,12 +270,20 @@ PROCESS_THREAD(transmit_process, ev, data)
             }
 
             printf("\n");
+            
+            #ifdef DEBUG
+            printf("SENSOR NODE TIMEOUT %d\n", timeout_cnt);
+            #endif
 
             //Check when and if we will try to transmit again.
-            last_elem = list_head(&sensor_buff);
+            last_elem = list_head(sensor_buff);
             if (last_elem != NULL){
-                bool is_in_range  = (timeout_cnt != TIMEOUT_MAX);
-                set_tx_timer(is_in_range);
+                bool out_of_coverage = timeout_cnt >= TIMEOUT_MAX;
+                if (out_of_coverage){
+                    timeout_cnt = 0;
+                }
+
+                set_tx_timer(!out_of_coverage);
             }
             else{
                 PROCESS_YIELD();
