@@ -6,12 +6,12 @@ sn_tbl = tbl(tbl.NodeType == 'SN' & tbl.MsgType == 'S' & tbl.PktType == 'SPA', :
 C = cellfun(@(x) textscan(char(x),'SN_S_SPA_ADDR_%d_SQN_%d_DATA_%d %d %d %d %d %d %d %d %d '), ...
         sn_tbl.Output, 'UniformOutput', false);
 op1 = cell2mat(cellfun(@(x) [x{1} x{2} x{3} x{4} x{5} x{6} x{7} x{8} x{9} x{10} x{11}], C, 'UniformOutput', false));
-op1 = [(1:length(op1))' op1];
+op1 = [(1:size(op1, 1))' op1];
 
 C = cellfun(@(x) textscan(char(x),'BS_R_DAT_ADDR_%d_SQN_%d_DATA_%d %d %d %d %d %d %d %d %d '), ...
         bs_tbl.Output, 'UniformOutput', false);
 op2 = cell2mat(cellfun(@(x) [x{1} x{2} x{3} x{4} x{5} x{6} x{7} x{8} x{9} x{10} x{11}], C, 'UniformOutput', false));
-op2 = [(1:length(op2))' op2];
+op2 = [(1:size(op2, 1))' op2];
 
 % Print out the sent and received packets
 sn_list = unique(op1(:,2));

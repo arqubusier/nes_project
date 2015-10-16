@@ -22,13 +22,6 @@
 
 #define RECONFIG_TIMER 200
 
-#define SAMPLE_RATE 30
-/* Parameters for determining the transmission rate. Each time a new transmission
-* is made the sensor node will wait between RND_TIME_MIN and
-* RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
-#define RND_TIME_SENSOR_MIN 15000
-#define RND_TIME_SENSOR_VAR 15000
-
 #define SN_TX_POWER 15
 #define RN_TX_POWER 31
 #define BS_TX_POWER 31

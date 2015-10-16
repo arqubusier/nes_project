@@ -1,4 +1,4 @@
-% function print_trtime(tbl)
+function print_trtime(tbl)
 
 % relay node ack messages sent to sensor nodes
 rn_ack_tbl = tbl(tbl.NodeType == 'RN' & tbl.MsgType == 'S' & tbl.PktType == 'SAC', :);

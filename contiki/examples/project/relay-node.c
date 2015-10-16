@@ -260,7 +260,7 @@ PROCESS_THREAD(broadcast_process, ev, data)
 				packetbuf_copyfrom(&agg_data_fwd, sizeof(struct agg_packet));
 				broadcast_send(&broadcast);
 				
-				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_data_to_be_sent.address.u8[0], agg_data_to_be_sent.address.u8[1], agg_data_to_be_sent.seqno);
+				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_data_fwd.address.u8[0], agg_data_fwd.address.u8[1], agg_data_fwd.seqno);
 				//flg_agg_fwd = 0;
 				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
 			}
