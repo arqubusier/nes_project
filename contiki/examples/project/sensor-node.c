@@ -31,6 +31,8 @@
 #define BUFF_SIZE 25 
 
 #define TIMEOUT_MAX 4
+
+#define WAKEUP_EVENT
 #define DEBUG
 
 
@@ -140,6 +142,7 @@ static inline void set_tx_timer(bool is_in_range){
 }
 
 static uint8_t sample_cnt = 0; 
+static bool is_tx_sleeping = false;
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
@@ -187,10 +190,9 @@ PROCESS_THREAD(sensor_process, ev, data)
                 memb_free(&buff_memb, list_pop(sensor_buff));
             }
 
-            if (etimer_expired(&et_tx)){
-                PROCESS_CONTEXT_BEGIN(&transmit_process);
-                set_tx_timer(true);
-                PROCESS_CONTEXT_END(&transmit_process);
+            if (is_tx_sleeping){
+                is_tx_sleeping = false;
+                process_post(&transmit_process, PROCESS_EVENT_CONTINUE, NULL);
             }
 
             current_elem = memb_alloc(&buff_memb);
@@ -229,8 +231,16 @@ PROCESS_THREAD(transmit_process, ev, data)
     /* Transmit the oldest packet in the buffer. A new packet is selected
      * for transmission if the timeout counter reaches a maximum or if an
      * if an acknowledgement has been received.*/
-    set_tx_timer(true);
     while(1){
+        printf("SENSOR NODE TX PROCESS\n");
+        //Check when and if we will try to transmit again.
+        bool out_of_coverage = timeout_cnt >= TIMEOUT_MAX;
+        if (out_of_coverage){
+            timeout_cnt = 0;
+        }
+
+        set_tx_timer(!out_of_coverage);
+
         PROCESS_WAIT_UNTIL(etimer_expired(&et_tx));
         elem = list_head(sensor_buff);
 
@@ -246,52 +256,48 @@ PROCESS_THREAD(transmit_process, ev, data)
             }else{
                 timeout_cnt++;
             }
-            
-            //transmit
-            #ifdef DEBUG
-            printf("SENSOR NODE TRANSMITTING\n");
-            #endif
-            static struct sensor_packet sp;
-            sp.type = SENSOR_DATA;
-            sp.seqno = elem->seqno;
-            memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
-            packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
-            broadcast_send(&broadcast);
 
-            printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_",
-                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
-                    sp.seqno);
+            if (elem != NULL){
+                //transmit
+                #ifdef DEBUG
+                printf("SENSOR NODE TRANSMITTING\n");
+                #endif
+                static struct sensor_packet sp;
+                sp.type = SENSOR_DATA;
+                sp.seqno = elem->seqno;
+                memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
+                packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
+                broadcast_send(&broadcast);
 
-            int j;
-            for (j = 0; j < SAMPLES_PER_PACKET; j++){
-            	printf("%d %d %d ", 
-            			sp.samples[j].temp,
-                        sp.samples[j].heart, sp.samples[j].behaviour);
-            }
+                printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_",
+                        linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
+                        sp.seqno);
 
-            printf("\n");
-            
-            #ifdef DEBUG
-            printf("SENSOR NODE TIMEOUT %d\n", timeout_cnt);
-            #endif
-
-            //Check when and if we will try to transmit again.
-            last_elem = list_head(sensor_buff);
-            if (last_elem != NULL){
-                bool out_of_coverage = timeout_cnt >= TIMEOUT_MAX;
-                if (out_of_coverage){
-                    timeout_cnt = 0;
+                int j;
+                for (j = 0; j < SAMPLES_PER_PACKET; j++){
+                	printf("%d %d %d ", 
+                			sp.samples[j].temp,
+                            sp.samples[j].heart, sp.samples[j].behaviour);
                 }
 
-                set_tx_timer(!out_of_coverage);
-            }
-            else{
+                printf("\n");
+                
+                #ifdef DEBUG
+                printf("SENSOR NODE TIMEOUT %d\n", timeout_cnt);
+                #endif
+
+                last_elem = list_head(sensor_buff);
+            }else{
+                printf("SENSOR NODE SLEEPING\n");
+                is_tx_sleeping = true;
                 PROCESS_YIELD();
             }
 
+        }else{
+                printf("SENSOR NODE SLEEPING\n");
+                is_tx_sleeping = true;
+                PROCESS_YIELD();
         }
-
-        PROCESS_YIELD();
     }
 
     PROCESS_END();
