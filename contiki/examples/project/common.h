@@ -17,15 +17,24 @@
 
 // random timer to be set to a value between RND_TIME_MIN and RND_TIME_MIN + RND_TIME_VAR
 // in milliseconds (ms)
-#define RND_TIME_MIN 500
-#define RND_TIME_VAR 500 
+#define RND_TIME_AGGDATA_MIN 500
+#define RND_TIME_AGGDATA_VAR 500 
+// ACK and CONF packeges
+#define RND_TIME_ACK_MIN 200
+#define RND_TIME_ACK_VAR 300 
 
 //The time between routing configurations in seconds (s)
 #define RECONFIG_TIMER 200
 
+//Time for powertrace in milliseconds (ms)
+#define TIME_POWERTRACE 2000
+
 #define SN_TX_POWER 15
 #define RN_TX_POWER 31
 #define BS_TX_POWER 31
+
+#define DEBUG
+//#define POWERTRACE
 
 struct packet{
     uint8_t type;

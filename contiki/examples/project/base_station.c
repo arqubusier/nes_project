@@ -37,13 +37,13 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct packet *m;
 	m = packetbuf_dataptr();
-	printf("RECIEVED PACKET: %d\n", m->type);
 	
 	switch (m->type){
 		case AGGREGATED_DATA:
 			;
 			struct agg_packet *agg_data_tmp = (struct agg_packet *) m;
-		
+
+#ifdef DEBUG
 			int i, j;
 			for (i = 0; i < SENSOR_DATA_PER_PACKET; i++){
 				printf("BS_R_DAT_ADDR_%d.%d_SQN_%d_DATA_", 
@@ -54,6 +54,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 				}
 				printf("\n");
 			}
+#endif
 			
 			ack_agg_fwd.type = ACK_AGG;
 			linkaddr_copy(&ack_agg_fwd.address, &agg_data_tmp->address);
@@ -65,7 +66,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 	
 			if (etimer_expired(&et_rnd_ack)){
 				PROCESS_CONTEXT_BEGIN(&unicast_process);
-				etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
+				etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
 				PROCESS_CONTEXT_END(&unicast_process);
 			}
 			
@@ -85,7 +86,9 @@ PROCESS_THREAD(broadcast_process, ev, data)
 	PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
 	PROCESS_BEGIN();
-	//powertrace_start(CLOCK_SECOND * 2, "BS_P_");
+#ifdef POWERTRACE
+	powertrace_start(CLOCK_SECOND * TIME_POWERTRACE/1000, "BS_P_");
+#endif
     cc2420_set_txpower(RN_TX_POWER);
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
@@ -108,9 +111,10 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			broadcast_send(&broadcast);
 
 			etimer_set(&et_init, CLOCK_SECOND * RECONFIG_TIMER);
-
+#ifdef DEBUG
 			printf("BS_S_CON_SQN_%d_HOP_%d\n", init_msg.routing.seqn, init_msg.routing.hop_nr); // base station - sent - sequence nr
 			printf("Init sent: %d!\n", init_msg.routing.hop_nr);
+#endif
 		}
 	}
 
@@ -135,9 +139,10 @@ PROCESS_THREAD(unicast_process, ev, data)
 			  unicast_send(&unicast, &addr_ack_agg_fwd);
 			  
 			  flg_ack_agg = 0;
-			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_VAR))/1000);
-			  
+			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
+#ifdef DEBUG
 			  printf("BS_S_ACK_ADDR_%d.%d_SEQN_%d", addr_ack_agg_fwd.u8[0], addr_ack_agg_fwd.u8[1], ack_agg_fwd.seqno);
+#endif
 		  }
 	  }
   }

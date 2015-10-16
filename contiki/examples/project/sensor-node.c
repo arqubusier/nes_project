@@ -24,17 +24,14 @@
 /* Parameters for determining the transmission rate. Each time a new transmission
 * is made the sensor node will wait between RND_TIME_MIN and
 * RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
-#define SENSOR_SHORT_TX_MIN 1000
-#define SENSOR_SHORT_TX_VAR 1000
-#define SENSOR_LONG_TX_MIN 3000
-#define SENSOR_LONG_TX_VAR 3000
+#define SENSOR_SHORT_TX_MIN 1500
+#define SENSOR_SHORT_TX_VAR 500
+#define SENSOR_LONG_TX_MIN 25000
+#define SENSOR_LONG_TX_VAR 10000
 
-#define BUFF_SIZE 25 
+#define BUFF_SIZE 50 
 
 #define TIMEOUT_MAX 4
-
-#define WAKEUP_EVENT
-#define DEBUG
 
 
 /*A element to be used in a Contiki list, containting the exact number of
@@ -88,6 +85,7 @@ static void gen_sensor_sample(struct sensor_sample* sample){
     sample->behaviour = (uint8_t) random_rand() % 256;
 }
 
+/*
 static void
 broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
@@ -97,6 +95,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 	printf("RECIEVED PACKET: %d\n", m->type);
 #endif
 }
+*/
 
 static bool tx_success = false;
 
@@ -201,7 +200,7 @@ PROCESS_THREAD(sensor_process, ev, data)
 
 /*---------------------------------------------------------------------------*/
 
-static const struct broadcast_callbacks broadcast_call = {broadcast_recv};
+static const struct broadcast_callbacks broadcast_call = { 0 }; //{broadcast_recv};
 static const struct unicast_callbacks unicast_callbacks = {recv_uc};
 static struct broadcast_conn broadcast;
 static struct unicast_conn unicast;
@@ -217,7 +216,9 @@ PROCESS_THREAD(transmit_process, ev, data)
 {
     PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
     PROCESS_BEGIN();
-
+#ifdef POWERTRACE
+	powertrace_start(CLOCK_SECOND * TIME_POWERTRACE/1000, "SN_P_");
+#endif
     cc2420_set_txpower(SN_TX_POWER);
 
     broadcast_open(&broadcast, 129, &broadcast_call);

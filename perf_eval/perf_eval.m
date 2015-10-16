@@ -6,7 +6,7 @@ clc
 %% Import simulation log
 % tbl = import_log('../test_results/scenario_my1.txt');
 % tbl = import_log('../test_results/scenario2.txt');
-tbl = import_log('../test_results/scenario1_5SN_7RN.txt');
+tbl = import_log('../test_results/scenario2_5SN_7RN.txt');
 
 %% Powertrace
 % Extract powertrace information from output messages
@@ -17,7 +17,7 @@ tbl = import_log('../test_results/scenario1_5SN_7RN.txt');
 
 %% Packet delivery
 % Print the list of sent and received packets
-% print_packetdelivery(tbl);
+print_packetdelivery(tbl);
 
 %% Misc
 % Get the min/avg/max values of transmission times
