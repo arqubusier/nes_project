@@ -19,7 +19,14 @@
 
 #include "common.h"
 
-
+#define SAMPLE_RATE 7
+/* Parameters for determining the transmission rate. Each time a new transmission
+* is made the sensor node will wait between RND_TIME_MIN and
+* RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
+#define SENSOR_SHORT_TX_MIN 3000
+#define SENSOR_SHORT_TX_VAR 3000
+#define SENSOR_LONG_TX_MIN 3000
+#define SENSOR_LONG_TX_VAR 3000
 
 #define BUFF_SIZE 25 
 
@@ -92,7 +99,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 #endif
 }
 
-static bool should_send_next = false;
+static bool tx_success = false;
 
 static void
 recv_uc(struct unicast_conn *c, const linkaddr_t *from)
@@ -106,13 +113,24 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 		struct sensor_elem *se = list_head(sensor_buff);
 		
 		if (se !=NULL && asp->seqno == se->seqno){
-			should_send_next = true;
+			tx_success = true;
 			printf("SN_R_SAC_SQN_%d\n", se->seqno);
 		}
 	}
 }
 
+static struct etimer et_tx;
 
+static inline void set_tx_timer(bool is_in_range){
+    if(is_in_range){
+        etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_SHORT_TX_MIN +
+                    random_rand() % (CLOCK_SECOND * SENSOR_SHORT_TX_VAR))/1000);
+    }else{
+        etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_LONG_TX_MIN +
+                    random_rand() % (CLOCK_SECOND * SENSOR_LONG_TX_VAR))/1000);
+
+    }
+}
 
 static uint8_t sample_cnt = 0; 
 
@@ -161,6 +179,11 @@ PROCESS_THREAD(sensor_process, ev, data)
             if (list_length(sensor_buff) == BUFF_SIZE){
                 memb_free(&buff_memb, list_pop(sensor_buff));
             }
+
+            if (etimer_expired(&et_tx)){
+                set_tx_timer(true);
+            }
+
             current_elem = memb_alloc(&buff_memb);
         }
     }
@@ -175,6 +198,8 @@ static const struct unicast_callbacks unicast_callbacks = {recv_uc};
 static struct broadcast_conn broadcast;
 static struct unicast_conn unicast;
 
+static struct sensor_elem *last_elem = NULL;
+
 void exit_handler(struct broadcast_conn *bc, struct unicast_conn *uc){
     broadcast_close(bc);
     unicast_close(uc);
@@ -185,34 +210,39 @@ PROCESS_THREAD(transmit_process, ev, data)
     PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
     PROCESS_BEGIN();
 
-    static struct etimer et;
     cc2420_set_txpower(SN_TX_POWER);
 
     broadcast_open(&broadcast, 129, &broadcast_call);
     unicast_open(&unicast, 146, &unicast_callbacks);
+    
+    struct sensor_elem *elem = NULL;
 
     /* Transmit the oldest packet in the buffer. A new packet is selected
      * for transmission if the timeout counter reaches a maximum or if an
      * if an acknowledgement has been received.*/
+    set_tx_timer(true);
     while(1){
-		etimer_set(&et, (CLOCK_SECOND * RND_TIME_SENSOR_MIN +
-                    random_rand() % (CLOCK_SECOND * RND_TIME_SENSOR_VAR))/1000);
-        PROCESS_WAIT_UNTIL(etimer_expired(&et));
+        PROCESS_WAIT_UNTIL(etimer_expired(&et_tx));
         #ifdef DEBUG
         printf("process TRANSMIT\n");
         #endif
 
-        struct sensor_elem *elem = list_head(sensor_buff);
-        
-        if (elem != NULL && (timeout_cnt == TIMEOUT_MAX || should_send_next)){
-                printf("next packet\n");
-                memb_free(&buff_memb, list_pop(sensor_buff));
-                elem = list_head(sensor_buff);
-                timeout_cnt = 0;
-                should_send_next = false;
-        }
+        elem = list_head(sensor_buff);
 
         if (elem != NULL){
+            if (tx_success){
+                if (elem == last_elem){
+                    printf("next packet\n");
+                    memb_free(&buff_memb, list_pop(sensor_buff));
+                    elem = list_head(sensor_buff);
+                }
+                timeout_cnt = 0;
+                tx_success = false;
+            }else{
+                timeout_cnt++;
+            }
+            
+            //transmit
             static struct sensor_packet sp;
             sp.type = SENSOR_DATA;
             sp.seqno = elem->seqno;
@@ -220,21 +250,32 @@ PROCESS_THREAD(transmit_process, ev, data)
             packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
             broadcast_send(&broadcast);
 
-            #ifdef DEBUG
-            print_sensor_packet(&sp);
-            #endif
-
-            timeout_cnt++;
-
-            printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_", linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1], sp.seqno);
+            printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_",
+                    linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
+                    sp.seqno);
 
             int j;
             for (j = 0; j < SAMPLES_PER_PACKET; j++){
             	printf("%d %d %d ", 
-            			sp.samples[j].temp, sp.samples[j].heart, sp.samples[j].behaviour);
+            			sp.samples[j].temp,
+                        sp.samples[j].heart, sp.samples[j].behaviour);
             }
+
             printf("\n");
+
+            //Check when and if we will try to transmit again.
+            last_elem = list_head(&sensor_buff);
+            if (last_elem != NULL){
+                bool is_in_range  = (timeout_cnt != TIMEOUT_MAX);
+                set_tx_timer(is_in_range);
+            }
+            else{
+                PROCESS_YIELD();
+            }
+
         }
+
+        PROCESS_YIELD();
     }
 
     PROCESS_END();
