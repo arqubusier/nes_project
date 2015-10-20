@@ -30,7 +30,7 @@
 #define TIME_POWERTRACE 2000
 
 //Timeout for aggregated data forwarding in seconds (s)
-#define AGG_SEND_TIMEOUT 65
+#define AGG_SEND_TIMEOUT 90
 
 #define SN_TX_POWER 15
 #define RN_TX_POWER 31
