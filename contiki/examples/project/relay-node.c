@@ -97,7 +97,7 @@
                 if (spc == SENSOR_DATA_PER_PACKET && overwrite_send){
                     agg_data_to_be_sent = agg_data_buffer; //copy data to buffer
 
-                    agg_data_to_be_sent.seqno = seqno;
+                    agg_data_to_be_sent.seqno = seqno++;
                     agg_data_to_be_sent.hop_nr = hop_nr;
                     linkaddr_copy(&agg_data_to_be_sent.address, &linkaddr_node_addr);
                     agg_data_to_be_sent.type = AGGREGATED_DATA;
