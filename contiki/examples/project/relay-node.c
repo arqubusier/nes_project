@@ -27,7 +27,8 @@
 
     static int spc = 0;       // Sensor packet counter
 
-    static struct agg_packet agg_data_buffer, agg_data_to_be_sent, agg_data_fwd;
+    struct sensor_data agg_data_buffer[SENSOR_DATA_PER_PACKET];
+    static struct agg_packet agg_pkt_to_be_sent, agg_data_fwd;
     static struct ack_agg_packet ack_agg_fwd;
     static linkaddr_t addr_ack_agg_fwd;
 
@@ -46,7 +47,8 @@
 
     /* The AUTOSTART_PROCESSES() definition specifices what processes to
        start when this module is loaded.*/
-    AUTOSTART_PROCESSES(&broadcast_process, &unicast_process);
+    AUTOSTART_PROCESSES(&broadcast_process, &unicast_process,
+                        &send_timeout_process);
 
     /*---------------------------------------------------------------------------*/
     /* This function is called whenever a broadcast message is received. */
@@ -61,6 +63,7 @@
 
         switch (m->type){
             case SENSOR_DATA:
+                ;
                 //Clear tx buffer if last packet was received
                 if (overwrite_send_tx){
                     #ifdef DEBUG
@@ -68,7 +71,14 @@
                     #endif
                     overwrite_send_tx = 0;
                     overwrite_send_tmp = 1;
-                    agg_data_to_be_sent = (const struct agg_packet){ 0 };
+
+                    //reset buffer parameters
+                    memset(agg_pkt_to_be_sent.data, 0,
+                            sizeof(agg_pkt_to_be_sent.data));
+                    agg_pkt_to_be_sent.seqno = seqno++;
+                    linkaddr_copy(&agg_pkt_to_be_sent.address,
+                            &linkaddr_node_addr);
+                    agg_pkt_to_be_sent.type = AGGREGATED_DATA;
                 }
                     
                 //Update tmp buffer if not full
@@ -80,9 +90,9 @@
                     //save to buffer
                     struct sensor_packet *sp = (struct sensor_packet *) m; 		
                     
-                    linkaddr_copy(&agg_data_buffer.data[spc].address, from);
-                    agg_data_buffer.data[spc].seqno = sp->seqno;
-                    memcpy(agg_data_buffer.data[spc].samples,
+                    linkaddr_copy(&agg_data_buffer[spc].address, from);
+                    agg_data_buffer[spc].seqno = sp->seqno;
+                    memcpy(agg_data_buffer[spc].samples,
                             sp->samples, sizeof(sp->samples));
                     spc++;
 
@@ -95,7 +105,7 @@
                     
                     //reset timeout
                     PROCESS_CONTEXT_BEGIN(&send_timeout_process);
-                    etimer_set(&et_timeout, (CLOCK_SECOND * AGG_SEND_TIMEOUT));
+                    etimer_set(&et_timeout, CLOCK_SECOND * AGG_SEND_TIMEOUT);
                     PROCESS_CONTEXT_END(&send_timeout_process);
 
                     //set ack transmit timer
@@ -118,8 +128,9 @@
                  * transmitted packet to be received */
                 if (!flg_agg_send){
                     //copy data to buffer
-                    agg_data_to_be_sent = agg_data_buffer;
-                    agg_data_to_be_sent.hop_nr = hop_nr;
+                    agg_pkt_to_be_sent.hop_nr = hop_nr;
+                    memcpy(agg_pkt_to_be_sent.data,
+                            agg_data_buffer, sizeof(agg_data_buffer));
 
                     if (spc == SENSOR_DATA_PER_PACKET){
                         flg_agg_send = 1;
@@ -131,8 +142,8 @@
                             PROCESS_CONTEXT_END(&broadcast_process);
                         }
                         #ifdef DEBUG
-                        printf("agg_data_to_be_sent, type: %d\n",
-                                agg_data_to_be_sent.type);   		
+                        printf("agg_pkt_to_be_sent, type: %d\n",
+                                agg_pkt_to_be_sent.type);   		
                         #endif
                     }
                 };
@@ -146,12 +157,7 @@
                     overwrite_send_tmp = 0;
 
                     // reinitialize the agg_data_buffer
-                    agg_data_buffer = (const struct agg_packet){ 0 };
-                    
-                    linkaddr_copy(&agg_data_to_be_sent.address,
-                            &linkaddr_node_addr);
-                    agg_data_to_be_sent.type = AGGREGATED_DATA;
-                    agg_data_to_be_sent.seqno = seqno++;
+                    memset(agg_data_buffer, 0, sizeof(agg_data_buffer));
 
                     //reinitialize the Sensor packet counter
                     spc = 0;
@@ -186,6 +192,7 @@
 
             case AGGREGATED_DATA:
                 ;
+                printf("AGGREGATED DATA\n");
                 struct agg_packet *agg_data_tmp = (struct agg_packet *) m;
                 
                 if (agg_data_tmp->hop_nr > hop_nr && overwrite_fwd){
@@ -237,7 +244,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 #endif
 		
 		if (flg_agg_send){
-			if (linkaddr_cmp(&agg_data_to_be_sent.address, &ack_agg_rcv->address) && (agg_data_to_be_sent.seqno == ack_agg_rcv->seqno)){
+			if (linkaddr_cmp(&agg_pkt_to_be_sent.address, &ack_agg_rcv->address) && (agg_pkt_to_be_sent.seqno == ack_agg_rcv->seqno)){
 				flg_agg_send = 0;
 				overwrite_send_tx = 1;
 			}
@@ -272,15 +279,6 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
 
-    //reset tmp agg buffer
-    agg_data_buffer = (const struct agg_packet){ 0 };
-    
-    linkaddr_copy(&agg_data_to_be_sent.address,
-            &linkaddr_node_addr);
-    agg_data_to_be_sent.type = AGGREGATED_DATA;
-    agg_data_to_be_sent.seqno = seqno++;
-
-
 	while(1) {
 
 		PROCESS_WAIT_EVENT();
@@ -305,10 +303,10 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			}
 			else if (flg_agg_send){
 				
-				packetbuf_copyfrom(&agg_data_to_be_sent, sizeof(struct agg_packet));
+				packetbuf_copyfrom(&agg_pkt_to_be_sent, sizeof(struct agg_packet));
 				broadcast_send(&broadcast);
 #ifdef DEBUG
-				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_data_to_be_sent.address.u8[0], agg_data_to_be_sent.address.u8[1], agg_data_to_be_sent.seqno);
+				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_pkt_to_be_sent.address.u8[0], agg_pkt_to_be_sent.address.u8[1], agg_pkt_to_be_sent.seqno);
 #endif
 				//flg_agg_send = 0;
 				etimer_set(&et_rnd, (CLOCK_SECOND * 3 * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
@@ -387,15 +385,16 @@ PROCESS_THREAD(send_timeout_process, ev, data)
         #ifdef DEBUG
         printf("RELAY NODE TIMEOUT\n");
         #endif
+        PROCESS_YIELD();
+
         flg_agg_send = 1;
 
-        //set broadcast timer
+        //set data aggregation send broadcast timer
         if (etimer_expired(&et_rnd)){
             PROCESS_CONTEXT_BEGIN(&broadcast_process);
             etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
             PROCESS_CONTEXT_END(&broadcast_process);
         }
-        PROCESS_YIELD();
     }
     PROCESS_END();
 }
