@@ -17,9 +17,9 @@
     };
 
     static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_agg = 0;
-    static int overwrite_send = 1, overwrite_fwd = 1;
+    static int overwrite_send_tmp = 1, overwrite_send_tx = 1, overwrite_fwd = 1;
 
-    static struct etimer et_rnd, et_rnd_ack;
+    static struct etimer et_rnd, et_rnd_ack, et_timeout;
 
     static uint8_t seqno = 0;
     static uint8_t hop_nr = HOP_NR_INITIAL;
@@ -42,6 +42,7 @@
     /* Declare the broadcast and unicast processes */
     PROCESS(broadcast_process, "Broadcast process");
     PROCESS(unicast_process, "Unicast process");
+    PROCESS(send_timeout_process, "Send timeout process");
 
     /* The AUTOSTART_PROCESSES() definition specifices what processes to
        start when this module is loaded.*/
@@ -60,64 +61,101 @@
 
         switch (m->type){
             case SENSOR_DATA:
+                //Clear tx buffer if last packet was received
+                if (overwrite_send_tx){
+                    #ifdef DEBUG
+                    printf("RELAY NODE CLEARING TX BUFF\n");   		
+                    #endif
+                    overwrite_send_tx = 0;
+                    overwrite_send_tmp = 1;
+                    agg_data_to_be_sent = (const struct agg_packet){ 0 };
+                }
                     
+                //Update tmp buffer if not full
                 if (spc < SENSOR_DATA_PER_PACKET){
-#ifdef DEBUG
+                    #ifdef DEBUG
                     printf("sensor_packet received, cnt: %d\n", spc);	 
-#endif
+                    #endif
 
                     //save to buffer
                     struct sensor_packet *sp = (struct sensor_packet *) m; 		
                     
                     linkaddr_copy(&agg_data_buffer.data[spc].address, from);
                     agg_data_buffer.data[spc].seqno = sp->seqno;
-                    memcpy(agg_data_buffer.data[spc].samples, sp->samples,  sizeof(sp->samples));
+                    memcpy(agg_data_buffer.data[spc].samples,
+                            sp->samples, sizeof(sp->samples));
                     spc++;
-#ifdef DEBUG
-                    printf("Buffer counter: %d\n", spc-1);
-                    print_sensor_packet(sp);
 
-                    printf("RN_R_SPA_ADDR_%d.%d_SQN_%d", from->u8[0], from->u8[1], sp->seqno);
-#endif
-                    
-                    // Send an acknolwedge to the sensor node we received the packet
-                    // from.
+                    // Send an acknolwedge to the sensor node we received the
+                    // packet from.
                     struct sensor_ack_elem *se = memb_alloc(&sensor_ack_memb);
                     linkaddr_copy(&se->addr, from);
                     se->seqno = sp->seqno;
                     list_add(sensor_ack_list, se);
                     
+                    //reset timeout
+                    PROCESS_CONTEXT_BEGIN(&send_timeout_process);
+                    etimer_set(&et_timeout, (CLOCK_SECOND * AGG_SEND_TIMEOUT));
+                    PROCESS_CONTEXT_END(&send_timeout_process);
+
+                    //set ack transmit timer
                     if (etimer_expired(&et_rnd_ack)){
                         PROCESS_CONTEXT_BEGIN(&unicast_process);
                         etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
                         PROCESS_CONTEXT_END(&unicast_process);
                     }
+                    
+                    #ifdef DEBUG
+                    printf("Buffer counter: %d\n", spc-1);
+                    print_sensor_packet(sp);
+                    printf("RN_R_SPA_ADDR_%d.%d_SQN_%d",
+                            from->u8[0], from->u8[1], sp->seqno);
+                    #endif
+                    
                 }			
                 
-                if (spc == SENSOR_DATA_PER_PACKET && overwrite_send){
-                    agg_data_to_be_sent = agg_data_buffer; //copy data to buffer
-
-                    agg_data_to_be_sent.seqno = seqno++;
+                /* update transmit buffer if we are not waiting for a the last
+                 * transmitted packet to be received */
+                if (!flg_agg_send){
+                    //copy data to buffer
+                    agg_data_to_be_sent = agg_data_buffer;
                     agg_data_to_be_sent.hop_nr = hop_nr;
-                    linkaddr_copy(&agg_data_to_be_sent.address, &linkaddr_node_addr);
-                    agg_data_to_be_sent.type = AGGREGATED_DATA;
-                    
+
+                    if (spc == SENSOR_DATA_PER_PACKET){
+                        flg_agg_send = 1;
+
+                        //set broadcast timer
+                        if (etimer_expired(&et_rnd)){
+                            PROCESS_CONTEXT_BEGIN(&broadcast_process);
+                            etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
+                            PROCESS_CONTEXT_END(&broadcast_process);
+                        }
+                        #ifdef DEBUG
+                        printf("agg_data_to_be_sent, type: %d\n",
+                                agg_data_to_be_sent.type);   		
+                        #endif
+                    }
+                };
+
+                // The temporary buffer is cleared the first time flg_send_agg
+                // is set to true.
+                if (flg_agg_send && overwrite_send_tmp){
+                    #ifdef DEBUG
+                    printf("RELAY NODE CLEARING TMP BUFF\n");   		
+                    #endif
+                    overwrite_send_tmp = 0;
+
                     // reinitialize the agg_data_buffer
                     agg_data_buffer = (const struct agg_packet){ 0 };
                     
+                    linkaddr_copy(&agg_data_to_be_sent.address,
+                            &linkaddr_node_addr);
+                    agg_data_to_be_sent.type = AGGREGATED_DATA;
+                    agg_data_to_be_sent.seqno = seqno++;
+
                     //reinitialize the Sensor packet counter
                     spc = 0;
-                    overwrite_send = 0;
-                    flg_agg_send = 1;
-#ifdef DEBUG
-                    printf("agg_data_to_be_sent, type: %d\n", agg_data_to_be_sent.type);   		
-#endif
-                    if (etimer_expired(&et_rnd)){
-                        PROCESS_CONTEXT_BEGIN(&broadcast_process);
-                        etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
-                        PROCESS_CONTEXT_END(&broadcast_process);
-                    }
-                };
+                }
                 
                 break;
 
@@ -201,7 +239,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 		if (flg_agg_send){
 			if (linkaddr_cmp(&agg_data_to_be_sent.address, &ack_agg_rcv->address) && (agg_data_to_be_sent.seqno == ack_agg_rcv->seqno)){
 				flg_agg_send = 0;
-				overwrite_send = 1;
+				overwrite_send_tx = 1;
 			}
 		}
 		else if (flg_agg_fwd){
@@ -233,6 +271,15 @@ PROCESS_THREAD(broadcast_process, ev, data)
     cc2420_set_txpower(RN_TX_POWER);
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
+
+    //reset tmp agg buffer
+    agg_data_buffer = (const struct agg_packet){ 0 };
+    
+    linkaddr_copy(&agg_data_to_be_sent.address,
+            &linkaddr_node_addr);
+    agg_data_to_be_sent.type = AGGREGATED_DATA;
+    agg_data_to_be_sent.seqno = seqno++;
+
 
 	while(1) {
 
@@ -330,4 +377,25 @@ PROCESS_THREAD(unicast_process, ev, data)
   }
 
   PROCESS_END();
+}
+
+
+PROCESS_THREAD(send_timeout_process, ev, data)
+{
+    PROCESS_BEGIN();
+    while (1){
+        #ifdef DEBUG
+        printf("RELAY NODE TIMEOUT\n");
+        #endif
+        flg_agg_send = 1;
+
+        //set broadcast timer
+        if (etimer_expired(&et_rnd)){
+            PROCESS_CONTEXT_BEGIN(&broadcast_process);
+            etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
+            PROCESS_CONTEXT_END(&broadcast_process);
+        }
+        PROCESS_YIELD();
+    }
+    PROCESS_END();
 }
