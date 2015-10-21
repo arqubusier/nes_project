@@ -507,7 +507,7 @@ is the potentially high number of nodes needed for monitoring an entire herd.
 
 \section{Requirements}
 
-To ensure that the designed system can meet the needs of real-world usage, it
+To ensure that the designed system can meet the challenges described in chapter II, it
 needs to meet the following requirements:
 
 \begin{enumerate} 
@@ -568,7 +568,18 @@ rounding up to the nearest byte, the total amount of sensor data needed to be
 sent each five minute interval would be five bytes.
 
 
-\section{Simulation Software}
+\section{Implementation}
+
+CHANGE THIS
+
+The system will be developed for platforms supporting ContikiOs. For the
+physical- and MAC layers, the standard protocol IEEE 802.15.4~\cite{ieee802154}
+will be used.  For the network- and application layer, features from ContikiOs
+will be used.  Moreover, a routing algorithm might possibly be designed, if the
+routing algorithms present in ContikiOs are deemed unfitting for our
+application. 
+
+\subsection{Simulation Software}
 
 The design of the network will only be tested in simulation, no real world
 experiments will be done. We will use cooja, which is a simulator for contiki
@@ -603,17 +614,6 @@ supports different protocol stacks like uIP which is a very small and fully
 compliant TCP/IP stack. Contiki also supports Rime stack which consists of
 small layers built on top of each other and has single and multi-hop
 broadcast~\cite{coojacrash}.
-
-
-\section{Network Architecture}
-
-The system will be developed for platforms supporting ContikiOs. For the
-physical- and MAC layers, the standard protocol IEEE 802.15.4~\cite{ieee802154}
-will be used.  For the network- and application layer, features from ContikiOs
-will be used.  Moreover, a routing algorithm might possibly be designed, if the
-routing algorithms present in ContikiOs are deemed unfitting for our
-application. 
-
 \subsection{Network Topology}
 
 \begin{figure}
@@ -623,24 +623,55 @@ application.
     \label{fig:topology}
 \end{figure}
 
-The network topology will have a tree like structure with the base station
-acting as the root of the tree, see Fig \ref{fig:topology}. The relay nodes
-will act as the branches of the tree, being connected to the base station
-through each other, while the sensor nodes will behave like the leaves of the
-tree. Using this setup, the sensor nodes will be configured as reduced
-functioning devices (RFDs) and the other nodes will be full functioning devices
-(FFDs).
+The network topology of the implementation has a tree like structure with
+the base station acting as the root of the tree, see Fig \ref{fig:topology}.
+The relay nodes act as the branches of the tree, being connected to the base
+station through each other, while the sensor nodes behave like the leaves of
+the tree.
 
+The sensor nodes send data to any relay node that is within transmission range.
+Once received by a relay node, the data will be forwarded to the base station
+with the help of a routing protocol.
 
 \subsection{Physical Layer}
 
-To mitigate the problems with coverage, tranceivers with carrier frequencies
-between 902 MHz and 928 MHz of the IEEE 802.15.4 standard, will be considered in order
-to get an increased range. Even though these frequencies provide a lower
-datarate, of around 40 kbps \cite{ieee802154}, it is
-still sufficient for the small amounts of data collected by the sensors.
-Furthermore, the modulation scheme to be used will either be ASK-, BPSK or
-O-QPSK.
+In order to get an increased range and mitigate the problems with coverage,
+carrier frequencies between 902 MHz and 928 MHz of the IEEE 802.15.4 standard,
+were originally considered. However, as these frequencies are not supported by
+the TI CC2420 transceiver of the Telos B, a frequency of around 2.4 GHz was
+used instead.
+
+For the modulation, the direct-sequence spread spectrum is used, because it is
+implemented in the transceiver mentioned above.
+
+Different transmission powers are used for the different node types used in the
+implementation. The base station and relay nodes both use the maximum
+transmission power of the transceiver to ensure that the relay nodes can be
+placed as far apart as possible.  The sensor nodes, on the other hand, use half
+of the maximum transmission power to save energy. Because the sensitivity of
+the Telos B nodes cannot be changed, this introduces an asymmetry between the
+nodes: relay nodes can reach the sensor nodes at maximum range while the
+converse is not possible.  Even though this reduces the coverage compared to
+the case where maximum transmission power is also used in the sensor nodes,
+there is still one benefit: few relay nodes are needed to create a chain to
+a relay node placed far away from the base station (for example in a remote
+corner of the field). Thus the sensor nodes will still have a short distance to
+the nearest relay node.
+
+According to an experiment performed in an outdoor environment, the average
+propagation path loss at 60 m for a link between two Telos B Nodes was
+estimated to be 92.3 dB. Using this value, along with 0 dBm, the maximum
+transmission power of the Telos B node, in the path propagation loss formula:
+
+\begin{displaymath}
+    P_{r}[dBm] = P_{t}[dBm] - P_{L}[dB]
+\end{displaymath}
+
+where $P_{r}$ is the received power, $P_{t}$ is the transmitted power, and
+$P_{L}$ is the propagation path loss gives -92.3 dBm which is greater than -94
+dBm, the nominal receiving sensitivity of a Telos B node. Taking this into
+account, the maximum transmission distance of the nodes are set to 60 m in the
+simulation.
 
 \subsection{MAC Layer}
 
@@ -669,6 +700,24 @@ only these will have to listen continuously, and not the sensor nodes. In view
 of these arguments, the design will use the nonbeacon-enabled mode. However, as
 contiki does not implement unslotted CSMA/CA, we will use one of the
 congestion-based MAC layers that contiki provides, in its place.
+
+\subsection{Network Layer}
+
+\section{Performance Evaluation}
+
+\subsection{Mobility Models}
+
+\subsection{Test Scenarios}
+
+\subsection{Data Extraction} 
+
+\subsection{Results}
+
+\subsection{Discussion}
+
+\section{Conclusion}
+
+\section{Future Work}
 
 %\section{Work Plan}
 
