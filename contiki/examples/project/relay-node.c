@@ -17,7 +17,7 @@
     };
 
     static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_agg = 0;
-    static int overwrite_send_tmp = 1, overwrite_send_tx = 1, overwrite_fwd = 1;
+    static int write_send_tx = 1, overwrite_fwd = 1, lock_agg = 0;
 
     static struct etimer et_rnd, et_rnd_ack, et_timeout;
 
@@ -25,10 +25,10 @@
     static uint8_t hop_nr = HOP_NR_INITIAL;
     static uint8_t conf_seqn = SEQN_INITIAL;
 
-    static int spc = 0;       // Sensor packet counter
+    static int spc_tx = 0, spc_tmp = 0;       // Sensor packet counter
 
-    struct sensor_data agg_data_buffer[SENSOR_DATA_PER_PACKET];
-    static struct agg_packet agg_pkt_to_be_sent, agg_data_fwd;
+    //struct sensor_data agg_data_buffer[SENSOR_DATA_PER_PACKET];
+    static struct agg_packet agg_pkt_to_be_sent, agg_data_fwd, agg_data_buffer;
     static struct ack_agg_packet ack_agg_fwd;
     static linkaddr_t addr_ack_agg_fwd;
 
@@ -56,6 +56,7 @@
     broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
     {
         struct packet *m;
+        static int sensor_data_saved;
 
         /* 	The packetbuf_dataptr() returns a pointer to the first data byte
             in the received packet. */
@@ -63,7 +64,115 @@
 
         switch (m->type){
             case SENSOR_DATA:
-                ;
+                /*
+                 * 1. Add packet to agg_send if it is not locked
+                 * 2. If it is locked, add packet to the agg_buff
+                 * 3. When agg_send gets unlocked empty it, copy agg_buff into it and finally empty agg_buff
+                 */
+                
+                // if one of the 2 buffers is under maniulation, lock the access to them to avoid data corruption
+                if (lock_agg){
+                	break;
+                }
+                
+                lock_agg = 1;
+                sensor_data_saved = 0;
+                
+                struct sensor_packet *sp = (struct sensor_packet *) m;
+                
+                // if the sending buffer is not locked, we are writing into it
+                if (write_send_tx){
+                	if (spc_tx == 0){
+                		//reset buffer parameters
+                		memset(agg_pkt_to_be_sent.data, 0, sizeof(agg_pkt_to_be_sent.data));
+                		agg_pkt_to_be_sent.seqno = seqno++;
+                		linkaddr_copy(&agg_pkt_to_be_sent.address, &linkaddr_node_addr);
+                		agg_pkt_to_be_sent.type = AGGREGATED_DATA;
+                	}
+                	linkaddr_copy(&agg_pkt_to_be_sent.data[spc_tx].address, from);
+                	agg_pkt_to_be_sent.data[spc_tx].seqno = sp->seqno;
+                	memcpy(agg_pkt_to_be_sent.data[spc_tx].samples,
+                			sp->samples, sizeof(sp->samples));
+                	spc_tx++;
+
+                	sensor_data_saved = 1;
+                }
+                // if it is locked, then we write into the tmp buffer if it is not full yet
+                else if (spc_tmp < SENSOR_DATA_PER_PACKET){
+                	if (spc_tx == 0){
+                		//reset buffer parameters
+                		memset(agg_data_buffer.data, 0, sizeof(agg_data_buffer.data));
+                		agg_data_buffer.seqno = seqno++;
+                		linkaddr_copy(&agg_data_buffer.address, &linkaddr_node_addr);
+                		agg_data_buffer.type = AGGREGATED_DATA;
+                	}
+                	
+                	linkaddr_copy(&agg_data_buffer.data[spc_tmp].address, from);
+                	agg_data_buffer.data[spc_tmp].seqno = sp->seqno;
+                	memcpy(agg_data_buffer.data[spc_tmp].samples,
+                			sp->samples, sizeof(sp->samples));
+                	spc_tmp++;
+
+                	sensor_data_saved = 1;
+                }
+                
+                // if we successfully received a SENSOR_DATA  
+                if (sensor_data_saved){
+                	// Send an acknolwedge to the sensor node we received the
+                	// packet from.
+                	struct sensor_ack_elem *se = memb_alloc(&sensor_ack_memb);
+                	linkaddr_copy(&se->addr, from);
+                	se->seqno = sp->seqno;
+                	list_add(sensor_ack_list, se);
+
+                	//reset timeout
+					PROCESS_CONTEXT_BEGIN(&send_timeout_process);
+					etimer_set(&et_timeout, CLOCK_SECOND * AGG_SEND_TIMEOUT);
+					PROCESS_CONTEXT_END(&send_timeout_process);
+
+					//set ack transmit timer
+					if (etimer_expired(&et_rnd_ack)){
+						PROCESS_CONTEXT_BEGIN(&unicast_process);
+						etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
+						PROCESS_CONTEXT_END(&unicast_process);
+					}
+
+#ifdef DEBUG
+					//printf("Buffer counter: %d\n", spc-1);
+					print_sensor_packet(sp);
+					printf("RN_R_SPA_ADDR_%d.%d_SQN_%d\n",
+							from->u8[0], from->u8[1], sp->seqno);
+#endif
+                }
+
+                // if the sending buffer is full, it should be sent
+                if (spc_tx >= SENSOR_DATA_PER_PACKET){
+                	
+                	flg_agg_send = 1;
+                	
+                	// block new writings to this buffer
+                	write_send_tx = 0;
+
+                	// reset counter
+                	spc_tx = 0;
+
+                	// stop timeout - we just filled up the buffer, we don't need timeout
+                	PROCESS_CONTEXT_BEGIN(&send_timeout_process);
+                	etimer_stop(&et_timeout);
+                	PROCESS_CONTEXT_END(&send_timeout_process);
+
+                	// set broadcast timer - send the agg packet
+                	if (etimer_expired(&et_rnd)){
+                		PROCESS_CONTEXT_BEGIN(&broadcast_process);
+                		etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
+                		PROCESS_CONTEXT_END(&broadcast_process);
+                	}
+                }
+                
+                // unlock the buffer modification
+                lock_agg = 0;
+                
+                /*
                 //Clear tx buffer if last packet was received
                 if (overwrite_send_tx){
                     #ifdef DEBUG
@@ -118,14 +227,15 @@
                     #ifdef DEBUG
                     printf("Buffer counter: %d\n", spc-1);
                     print_sensor_packet(sp);
-                    printf("RN_R_SPA_ADDR_%d.%d_SQN_%d",
+                    printf("RN_R_SPA_ADDR_%d.%d_SQN_%d\n",
                             from->u8[0], from->u8[1], sp->seqno);
                     #endif
                     
-                }			
+                }*/			
                 
                 /* update transmit buffer if we are not waiting for a the last
                  * transmitted packet to be received */
+                /*
                 if (!flg_agg_send){
                     //copy data to buffer
                     agg_pkt_to_be_sent.hop_nr = hop_nr;
@@ -161,7 +271,7 @@
 
                     //reinitialize the Sensor packet counter
                     spc = 0;
-                }
+                }*/
                 
                 break;
 
@@ -245,8 +355,32 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 		
 		if (flg_agg_send){
 			if (linkaddr_cmp(&agg_pkt_to_be_sent.address, &ack_agg_rcv->address) && (agg_pkt_to_be_sent.seqno == ack_agg_rcv->seqno)){
-				flg_agg_send = 0;
-				overwrite_send_tx = 1;
+				// agg packet was successfully delivered to the next hop, so we can overwrite it
+				// we are going to modify the buffers, so lock them
+				lock_agg = 1;
+				
+				spc_tx = spc_tmp;
+				spc_tmp = 0;
+				memcpy(&agg_pkt_to_be_sent, &agg_data_buffer, sizeof(agg_data_buffer));
+				
+				if (spc_tx >= SENSOR_DATA_PER_PACKET){
+
+					// reset counter
+					spc_tx = 0;
+
+					// set broadcast timer - send the agg packet
+					if (etimer_expired(&et_rnd)){
+						PROCESS_CONTEXT_BEGIN(&broadcast_process);
+						etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
+						PROCESS_CONTEXT_END(&broadcast_process);
+					}
+				}
+				else{
+					flg_agg_send = 0;
+					write_send_tx = 1;
+				}
+				
+				lock_agg = 0;
 			}
 		}
 		else if (flg_agg_fwd){
@@ -303,7 +437,10 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			}
 			else if (flg_agg_send){
 				
+				lock_agg = 1;
+				agg_pkt_to_be_sent.hop_nr = hop_nr;
 				packetbuf_copyfrom(&agg_pkt_to_be_sent, sizeof(struct agg_packet));
+				lock_agg = 0;
 				broadcast_send(&broadcast);
 #ifdef DEBUG
 				printf("RN_S_DAT_ADDR_%d.%d_SQN_%d\n", agg_pkt_to_be_sent.address.u8[0], agg_pkt_to_be_sent.address.u8[1], agg_pkt_to_be_sent.seqno);
@@ -387,10 +524,14 @@ PROCESS_THREAD(send_timeout_process, ev, data)
         #endif
         PROCESS_YIELD();
 
-        flg_agg_send = 1;
-
         //set data aggregation send broadcast timer
-        if (etimer_expired(&et_rnd)){
+        if (etimer_expired(&et_timeout)){
+        	
+        	// block new writings to this buffer - we will try to send this agg data
+        	write_send_tx = 0;
+        	
+        	flg_agg_send = 1;
+        	
             PROCESS_CONTEXT_BEGIN(&broadcast_process);
             etimer_set(&et_rnd, (CLOCK_SECOND * RND_TIME_AGGDATA_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_AGGDATA_VAR))/1000);
             PROCESS_CONTEXT_END(&broadcast_process);
