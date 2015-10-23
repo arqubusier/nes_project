@@ -84,24 +84,23 @@
                 if (write_send_tx){
                 	if (spc_tx == 0){
                 		//reset buffer parameters
-                		memset(agg_pkt_to_be_sent.data, 0, sizeof(agg_pkt_to_be_sent.data));
+                		memset(&agg_pkt_to_be_sent, 0, sizeof(agg_pkt_to_be_sent));
                 		agg_pkt_to_be_sent.seqno = seqno++;
                 		linkaddr_copy(&agg_pkt_to_be_sent.address, &linkaddr_node_addr);
                 		agg_pkt_to_be_sent.type = AGGREGATED_DATA;
                 	}
                 	linkaddr_copy(&agg_pkt_to_be_sent.data[spc_tx].address, from);
                 	agg_pkt_to_be_sent.data[spc_tx].seqno = sp->seqno;
-                	memcpy(agg_pkt_to_be_sent.data[spc_tx].samples,
-                			sp->samples, sizeof(sp->samples));
+                	memcpy(agg_pkt_to_be_sent.data[spc_tx].samples, sp->samples, sizeof(sp->samples));
                 	spc_tx++;
 
                 	sensor_data_saved = 1;
                 }
                 // if it is locked, then we write into the tmp buffer if it is not full yet
                 else if (spc_tmp < SENSOR_DATA_PER_PACKET){
-                	if (spc_tx == 0){
+                	if (spc_tmp == 0){
                 		//reset buffer parameters
-                		memset(agg_data_buffer.data, 0, sizeof(agg_data_buffer.data));
+                		memset(&agg_data_buffer, 0, sizeof(agg_data_buffer));
                 		agg_data_buffer.seqno = seqno++;
                 		linkaddr_copy(&agg_data_buffer.address, &linkaddr_node_addr);
                 		agg_data_buffer.type = AGGREGATED_DATA;
@@ -145,8 +144,8 @@
 #endif
                 }
 
-                // if the sending buffer is full, it should be sent
-                if (spc_tx >= SENSOR_DATA_PER_PACKET){
+                // if the sending buffer is full and it is not yet in sending process, it should be sent
+                if (spc_tx >= SENSOR_DATA_PER_PACKET && flg_agg_send == 0){
                 	
                 	flg_agg_send = 1;
                 	
@@ -252,7 +251,7 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 #endif
 		
 		if (flg_agg_send){
-			if (linkaddr_cmp(&agg_pkt_to_be_sent.address, &ack_agg_rcv->address) && (agg_pkt_to_be_sent.seqno == ack_agg_rcv->seqno)){
+			if (lock_agg == 0 && linkaddr_cmp(&agg_pkt_to_be_sent.address, &ack_agg_rcv->address) && (agg_pkt_to_be_sent.seqno == ack_agg_rcv->seqno)){
 				// agg packet was successfully delivered to the next hop, so we can overwrite it
 				// we are going to modify the buffers, so lock them
 				lock_agg = 1;
