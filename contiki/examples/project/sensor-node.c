@@ -219,7 +219,8 @@ void exit_handler(struct broadcast_conn *bc, struct unicast_conn *uc){
 PROCESS_THREAD(transmit_process, ev, data)
 {
 	PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
-    		PROCESS_BEGIN();
+    
+    PROCESS_BEGIN();
 #ifdef POWERTRACE
 	powertrace_start(CLOCK_SECOND * TIME_POWERTRACE/1000, "SN_P_");
 #endif

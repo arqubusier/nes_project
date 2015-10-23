@@ -37,7 +37,7 @@
 #define BS_TX_POWER 31
 
 //#define DEBUG
-//#define POWERTRACE
+#define POWERTRACE
 #define EVALUATION
 
 struct packet{

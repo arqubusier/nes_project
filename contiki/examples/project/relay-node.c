@@ -17,7 +17,7 @@ struct sensor_ack_elem{
 };
 
 static int flg_conf = 0, flg_agg_fwd = 0, flg_agg_send = 0, flg_ack_agg = 0;
-static int write_send_tx = 1, overwrite_fwd = 1, lock_agg = 0;
+static int overwrite_fwd = 1, lock_agg = 0;
 
 static struct etimer et_rnd, et_rnd_ack, et_timeout;
 
@@ -81,7 +81,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 		struct sensor_packet *sp = (struct sensor_packet *) m;
 
 		// if the sending buffer is not locked, we are writing into it
-		if (write_send_tx){
+		if (!flg_agg_send){
 			if (spc_tx == 0){
 				//reset buffer parameters
 				memset(&agg_pkt_to_be_sent, 0, sizeof(agg_pkt_to_be_sent));
@@ -149,9 +149,6 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 		if (spc_tx >= SENSOR_DATA_PER_PACKET && flg_agg_send == 0){
 
 			flg_agg_send = 1;
-
-			// block new writings to this buffer
-			write_send_tx = 0;
 
 			// reset counter
 			spc_tx = 0;
@@ -284,7 +281,6 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 				}
 				else{
 					flg_agg_send = 0;
-					write_send_tx = 1;
 				}
 
 				lock_agg = 0;
@@ -441,9 +437,6 @@ PROCESS_THREAD(send_timeout_process, ev, data)
 
 		//set data aggregation send broadcast timer
 		if (etimer_expired(&et_timeout)){
-
-			// block new writings to this buffer - we will try to send this agg data
-			write_send_tx = 0;
 
 			flg_agg_send = 1;
 
