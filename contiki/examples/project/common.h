@@ -36,8 +36,9 @@
 #define RN_TX_POWER 31
 #define BS_TX_POWER 31
 
-#define DEBUG
+//#define DEBUG
 //#define POWERTRACE
+#define EVALUATION
 
 struct packet{
     uint8_t type;

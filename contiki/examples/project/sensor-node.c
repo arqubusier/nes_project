@@ -22,8 +22,8 @@
 /* The rate at which sensor samples are generated in seconds (s). */
 #define SAMPLE_RATE 12
 /* Parameters for determining the transmission rate. Each time a new transmission
-* is made the sensor node will wait between RND_TIME_MIN and
-* RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
+ * is made the sensor node will wait between RND_TIME_MIN and
+ * RND_TIME_MIN + RND_TIME_VAR, in milliseconds (ms).*/
 #define SENSOR_SHORT_TX_MIN 1500
 #define SENSOR_SHORT_TX_VAR 500
 #define SENSOR_LONG_TX_MIN 25000
@@ -37,10 +37,10 @@
 /*A element to be used in a Contiki list, containting the exact number of
  * sample data for one sensor_packet*/
 struct sensor_elem{
-    //the next pointer is needed because the struct is used in a Contiki List
-    struct sensor_elem *next;
-    uint8_t seqno;
-    struct sensor_sample samples[SAMPLES_PER_PACKET];
+	//the next pointer is needed because the struct is used in a Contiki List
+	struct sensor_elem *next;
+	uint8_t seqno;
+	struct sensor_sample samples[SAMPLES_PER_PACKET];
 };
 
 /*---------------------------------------------------------------------------*/
@@ -62,27 +62,27 @@ static uint8_t seqno = 0;
 
 #ifdef DEBUG
 void print_sensor_elem(struct sensor_elem *sp){
-    int i;
-    printf("PRINTING SENSOR PACKET\n");
-    for (i = 0; i < SAMPLES_PER_PACKET; i++){
-        printf("SAMPLE %d: ", i);
-        print_sensor_sample(&sp->samples[i]);
-    }
-    printf("END OF SENSOR PACKET\n");
+	int i;
+	printf("PRINTING SENSOR PACKET\n");
+	for (i = 0; i < SAMPLES_PER_PACKET; i++){
+		printf("SAMPLE %d: ", i);
+		print_sensor_sample(&sp->samples[i]);
+	}
+	printf("END OF SENSOR PACKET\n");
 }
 
 static void print_list(list_t l){
-    struct sensor_elem *s;
-    for (s = list_head(l); s != NULL; s = list_item_next(s)){
-        print_sensor_elem(s);
-    }
+	struct sensor_elem *s;
+	for (s = list_head(l); s != NULL; s = list_item_next(s)){
+		print_sensor_elem(s);
+	}
 }
 #endif
 
 static void gen_sensor_sample(struct sensor_sample* sample){
-    sample->temp = (uint8_t) random_rand() % 256;
-    sample->heart = (uint8_t) random_rand() % 256;
-    sample->behaviour = (uint8_t) random_rand() % 256;
+	sample->temp = (uint8_t) random_rand() % 256;
+	sample->heart = (uint8_t) random_rand() % 256;
+	sample->behaviour = (uint8_t) random_rand() % 256;
 }
 
 /*
@@ -95,7 +95,7 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 	printf("RECIEVED PACKET: %d\n", m->type);
 #endif
 }
-*/
+ */
 
 static bool tx_success = false;
 
@@ -109,10 +109,12 @@ recv_uc(struct unicast_conn *c, const linkaddr_t *from)
 	if (m->type == ACK_SENSOR){
 		struct ack_sensor_packet *asp = (struct ack_sensor_packet *) m;
 		struct sensor_elem *se = list_head(sensor_buff);
-		
+
 		if (se !=NULL && asp->seqno == se->seqno){
 			tx_success = true;
+#ifdef EVALUATION
 			printf("SN_R_SAC_SQN_%d\n", se->seqno);
+#endif
 		}
 	}
 }
@@ -121,20 +123,20 @@ static struct etimer et_tx;
 
 static inline void set_tx_timer(bool is_in_range){
 
-    if(is_in_range){
-        #ifdef DEBUG
-        printf("short timer\n");
-        #endif
-        etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_SHORT_TX_MIN +
-                    random_rand() % (CLOCK_SECOND * SENSOR_SHORT_TX_VAR))/1000);
-    }else{
-        #ifdef DEBUG
-        printf("long timer\n");
-        #endif
-        etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_LONG_TX_MIN +
-                    random_rand() % (CLOCK_SECOND * SENSOR_LONG_TX_VAR))/1000);
+	if(is_in_range){
+#ifdef DEBUG
+		printf("short timer\n");
+#endif
+		etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_SHORT_TX_MIN +
+				random_rand() % (CLOCK_SECOND * SENSOR_SHORT_TX_VAR))/1000);
+	}else{
+#ifdef DEBUG
+		printf("long timer\n");
+#endif
+		etimer_set(&et_tx, (CLOCK_SECOND * SENSOR_LONG_TX_MIN +
+				random_rand() % (CLOCK_SECOND * SENSOR_LONG_TX_VAR))/1000);
 
-    }
+	}
 }
 
 static uint8_t sample_cnt = 0; 
@@ -142,60 +144,62 @@ static bool is_tx_sleeping = false;
 
 PROCESS_THREAD(sensor_process, ev, data)
 {
-    PROCESS_BEGIN();
+	PROCESS_BEGIN();
 
-    list_init(sensor_buff);
-    memb_init(&buff_memb);
+	list_init(sensor_buff);
+	memb_init(&buff_memb);
 
-    current_elem = memb_alloc(&buff_memb);
-    sample_cnt = 0;
+	current_elem = memb_alloc(&buff_memb);
+	sample_cnt = 0;
 
 
-    static struct etimer et;
-    
-    /* Generate a new sample values, store them in a list buffer, and sleep.
-     * The buffer is used for caching purposes when out of coverage of the
-     * relay nodes. The oldest value is overwritten if the buffer becomes
-     * full.*/
-    while(1){
-        printf("process SENSOR\n");
-        etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
-        PROCESS_WAIT_UNTIL(etimer_expired(&et));
+	static struct etimer et;
 
-        gen_sensor_sample(&current_elem->samples[sample_cnt]);
-        
-        #ifdef DEBUG
-        printf("NEW DATA\n");
-        print_sensor_sample(&current_elem->samples[sample_cnt]);
-        #endif
-        sample_cnt++;
+	/* Generate a new sample values, store them in a list buffer, and sleep.
+	 * The buffer is used for caching purposes when out of coverage of the
+	 * relay nodes. The oldest value is overwritten if the buffer becomes
+	 * full.*/
+	while(1){
+#ifdef DEBUG
+		printf("process SENSOR\n");
+#endif
+		etimer_set(&et, CLOCK_SECOND*SAMPLE_RATE);
+		PROCESS_WAIT_UNTIL(etimer_expired(&et));
 
-        if (sample_cnt == SAMPLES_PER_PACKET){
-            //The current element is full, make a new element.
-            list_add(sensor_buff, current_elem);
-            current_elem->seqno = seqno++;
-            sample_cnt = 0;
+		gen_sensor_sample(&current_elem->samples[sample_cnt]);
 
-            #ifdef DEBUG
-            print_list(sensor_buff);
-            #endif
+#ifdef DEBUG
+		printf("NEW DATA\n");
+		print_sensor_sample(&current_elem->samples[sample_cnt]);
+#endif
+		sample_cnt++;
 
-            /*list is manipulated in two different user threads.
-             * this is ok, since they are not preemptive.*/
-            if (list_length(sensor_buff) == BUFF_SIZE){
-                memb_free(&buff_memb, list_pop(sensor_buff));
-            }
+		if (sample_cnt == SAMPLES_PER_PACKET){
+			//The current element is full, make a new element.
+			list_add(sensor_buff, current_elem);
+			current_elem->seqno = seqno++;
+			sample_cnt = 0;
 
-            if (is_tx_sleeping){
-                is_tx_sleeping = false;
-                process_post(&transmit_process, PROCESS_EVENT_CONTINUE, NULL);
-            }
+#ifdef DEBUG
+			print_list(sensor_buff);
+#endif
 
-            current_elem = memb_alloc(&buff_memb);
-        }
-    }
-    
-    PROCESS_END();
+			/*list is manipulated in two different user threads.
+			 * this is ok, since they are not preemptive.*/
+			if (list_length(sensor_buff) == BUFF_SIZE){
+				memb_free(&buff_memb, list_pop(sensor_buff));
+			}
+
+			if (is_tx_sleeping){
+				is_tx_sleeping = false;
+				process_post(&transmit_process, PROCESS_EVENT_CONTINUE, NULL);
+			}
+
+			current_elem = memb_alloc(&buff_memb);
+		}
+	}
+
+	PROCESS_END();
 }
 
 /*---------------------------------------------------------------------------*/
@@ -208,94 +212,104 @@ static struct unicast_conn unicast;
 static struct sensor_elem *last_elem = NULL;
 
 void exit_handler(struct broadcast_conn *bc, struct unicast_conn *uc){
-    broadcast_close(bc);
-    unicast_close(uc);
+	broadcast_close(bc);
+	unicast_close(uc);
 }
 
 PROCESS_THREAD(transmit_process, ev, data)
 {
-    PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
-    PROCESS_BEGIN();
+	PROCESS_EXITHANDLER(exit_handler(&broadcast, &unicast);)
+    		PROCESS_BEGIN();
 #ifdef POWERTRACE
 	powertrace_start(CLOCK_SECOND * TIME_POWERTRACE/1000, "SN_P_");
 #endif
-    cc2420_set_txpower(SN_TX_POWER);
+	cc2420_set_txpower(SN_TX_POWER);
 
-    broadcast_open(&broadcast, 129, &broadcast_call);
-    unicast_open(&unicast, 146, &unicast_callbacks);
-    
-    struct sensor_elem *elem = NULL;
+	broadcast_open(&broadcast, 129, &broadcast_call);
+	unicast_open(&unicast, 146, &unicast_callbacks);
 
-    /* Try to transmit the oldest packet in the buffer.*/
-    while(1){
-        printf("SENSOR NODE TX PROCESS\n");
-        //Check when and if we will try to transmit again.
-        bool out_of_coverage = timeout_cnt >= TIMEOUT_MAX;
-        if (out_of_coverage){
-            timeout_cnt = 0;
-        }
+	struct sensor_elem *elem = NULL;
 
-        set_tx_timer(!out_of_coverage);
+	/* Try to transmit the oldest packet in the buffer.*/
+	while(1){
+#ifdef DEBUG
+		printf("SENSOR NODE TX PROCESS\n");
+#endif
+		//Check when and if we will try to transmit again.
+		bool out_of_coverage = timeout_cnt >= TIMEOUT_MAX;
+		if (out_of_coverage){
+			timeout_cnt = 0;
+		}
 
-        PROCESS_WAIT_UNTIL(etimer_expired(&et_tx));
-        elem = list_head(sensor_buff);
+		set_tx_timer(!out_of_coverage);
 
-        if (elem != NULL){
-            if (tx_success){
-                if (elem == last_elem){
-                    printf("next packet\n");
-                    memb_free(&buff_memb, list_pop(sensor_buff));
-                    elem = list_head(sensor_buff);
-                }
-                timeout_cnt = 0;
-                tx_success = false;
-            }else{
-                timeout_cnt++;
-            }
+		PROCESS_WAIT_UNTIL(etimer_expired(&et_tx));
+		elem = list_head(sensor_buff);
 
-            if (elem != NULL){
-                //transmit
-                #ifdef DEBUG
-                printf("SENSOR NODE TRANSMITTING\n");
-                #endif
-                static struct sensor_packet sp;
-                sp.type = SENSOR_DATA;
-                sp.seqno = elem->seqno;
-                memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
-                packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
-                broadcast_send(&broadcast);
+		if (elem != NULL){
+			if (tx_success){
+				if (elem == last_elem){
+#ifdef DEBUG
+					printf("next packet\n");
+#endif
+					memb_free(&buff_memb, list_pop(sensor_buff));
+					elem = list_head(sensor_buff);
+				}
+				timeout_cnt = 0;
+				tx_success = false;
+			}else{
+				timeout_cnt++;
+			}
 
-                //print data for simulation analysis
-                printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_",
-                        linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
-                        sp.seqno);
-                int j;
-                for (j = 0; j < SAMPLES_PER_PACKET; j++){
-                	printf("%d %d %d ", 
-                			sp.samples[j].temp,
-                            sp.samples[j].heart, sp.samples[j].behaviour);
-                }
-                printf("\n");
-                
-                #ifdef DEBUG
-                printf("SENSOR NODE TIMEOUT %d\n", timeout_cnt);
-                #endif
+			if (elem != NULL){
+				//transmit
+#ifdef DEBUG
+				printf("SENSOR NODE TRANSMITTING\n");
+#endif
+				static struct sensor_packet sp;
+				sp.type = SENSOR_DATA;
+				sp.seqno = elem->seqno;
+				memcpy(&sp.samples, &elem->samples, sizeof(elem->samples));
+				packetbuf_copyfrom(&sp, sizeof(struct sensor_packet));
+				broadcast_send(&broadcast);
 
-                last_elem = list_head(sensor_buff);
-            }else{
-                printf("SENSOR NODE SLEEPING\n");
-                is_tx_sleeping = true;
-                PROCESS_YIELD();
-            }
+#ifdef EVALUATION
+				//print data for simulation analysis
+				printf("SN_S_SPA_ADDR_%d.%d_SQN_%d_DATA_",
+						linkaddr_node_addr.u8[0], linkaddr_node_addr.u8[1],
+						sp.seqno);
+				int j;
+				for (j = 0; j < SAMPLES_PER_PACKET; j++){
+					printf("%d %d %d ", 
+							sp.samples[j].temp,
+							sp.samples[j].heart, sp.samples[j].behaviour);
+				}
+				printf("\n");
+#endif
 
-        }else{
-                printf("SENSOR NODE SLEEPING\n");
-                is_tx_sleeping = true;
-                PROCESS_YIELD();
-        }
-    }
+#ifdef DEBUG
+				printf("SENSOR NODE TIMEOUT %d\n", timeout_cnt);
+#endif
 
-    PROCESS_END();
+				last_elem = list_head(sensor_buff);
+			}else{
+#ifdef DEBUG
+				printf("SENSOR NODE SLEEPING\n");
+#endif
+				is_tx_sleeping = true;
+				PROCESS_YIELD();
+			}
+
+		}else{
+#ifdef DEBUG
+			printf("SENSOR NODE SLEEPING\n");
+#endif
+			is_tx_sleeping = true;
+			PROCESS_YIELD();
+		}
+	}
+
+	PROCESS_END();
 }
 
 /*---------------------------------------------------------------------------*/

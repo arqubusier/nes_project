@@ -6,7 +6,7 @@ clc
 %% Import simulation log
 % tbl = import_log('../test_results/scenario_my1.txt');
 % tbl = import_log('../test_results/scenario2.txt');
-tbl = import_log('../test_results/scenario2_5SN_7RN.txt');
+tbl = import_log('../test_results/r6_s30_d_sajat2_20min.txt');
 
 %% Powertrace
 % Extract powertrace information from output messages

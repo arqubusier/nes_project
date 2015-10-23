@@ -37,7 +37,8 @@ baseStationList = unique(tbl.ID(tbl.NodeType == 'BS'));
 relayNodeList = unique(tbl.ID(tbl.NodeType == 'RN'));
 sensorNodeList = unique(tbl.ID(tbl.NodeType == 'SN'));
 
-% Message type: S - sent; R - received; P - powertrace
+% Message type: S - sent; R - received; P - powertrace; E - extracted
+% sensor packet from aggregated packet
 msg_type = repmat({'UNSPECIFIED'}, height(tbl), 1);
 
 msg_type(tbl.EVAL_MSG) = cellfun(@(x) x(4), tbl.Output(tbl.EVAL_MSG), 'UniformOutput', false);
