@@ -37,40 +37,43 @@ broadcast_recv(struct broadcast_conn *c, const linkaddr_t *from)
 {
 	struct packet *m;
 	m = packetbuf_dataptr();
-	
-	switch (m->type){
-		case AGGREGATED_DATA:
-			;
-			struct agg_packet *agg_data_tmp = (struct agg_packet *) m;
 
-#ifdef DEBUG
-			int i, j;
-			for (i = 0; i < SENSOR_DATA_PER_PACKET; i++){
-				printf("BS_R_DAT_ADDR_%d.%d_SQN_%d_DATA_", 
-						agg_data_tmp->data[i].address.u8[0], agg_data_tmp->data[i].address.u8[1], agg_data_tmp->data[i].seqno);
-				for (j = 0; j < SAMPLES_PER_PACKET; j++){
-					printf("%d %d %d ", 
-							agg_data_tmp->data[i].samples[j].temp, agg_data_tmp->data[i].samples[j].heart, agg_data_tmp->data[i].samples[j].behaviour);
-				}
-				printf("\n");
+	switch (m->type){
+	case AGGREGATED_DATA:
+		;
+		struct agg_packet *agg_data_tmp = (struct agg_packet *) m;
+
+#ifdef EVALUATION
+		printf("BS_R_DAT_SRC_%d.%d_ADDR_%d.%d_SQN_%d\n", 
+				from->u8[0], from->u8[1], 
+				ack_agg_fwd.address.u8[0], ack_agg_fwd.address.u8[1], ack_agg_fwd.seqno);
+		int i, j;
+		for (i = 0; i < SENSOR_DATA_PER_PACKET; i++){
+			printf("BS_E_SPA_ADDR_%d.%d_SQN_%d_DATA_", 
+					agg_data_tmp->data[i].address.u8[0], agg_data_tmp->data[i].address.u8[1], agg_data_tmp->data[i].seqno);
+			for (j = 0; j < SAMPLES_PER_PACKET; j++){
+				printf("%d %d %d ", 
+						agg_data_tmp->data[i].samples[j].temp, agg_data_tmp->data[i].samples[j].heart, agg_data_tmp->data[i].samples[j].behaviour);
 			}
+			printf("\n");
+		}
 #endif
-			
-			ack_agg_fwd.type = ACK_AGG;
-			linkaddr_copy(&ack_agg_fwd.address, &agg_data_tmp->address);
-			ack_agg_fwd.seqno = agg_data_tmp->seqno;
-	
-			linkaddr_copy(&addr_ack_agg_fwd, from);
-	
-			flg_ack_agg = 1;
-	
-			if (etimer_expired(&et_rnd_ack)){
-				PROCESS_CONTEXT_BEGIN(&unicast_process);
-				etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
-				PROCESS_CONTEXT_END(&unicast_process);
-			}
-			
-			break;
+
+		ack_agg_fwd.type = ACK_AGG;
+		linkaddr_copy(&ack_agg_fwd.address, &agg_data_tmp->address);
+		ack_agg_fwd.seqno = agg_data_tmp->seqno;
+
+		linkaddr_copy(&addr_ack_agg_fwd, from);
+
+		flg_ack_agg = 1;
+
+		if (etimer_expired(&et_rnd_ack)){
+			PROCESS_CONTEXT_BEGIN(&unicast_process);
+			etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
+			PROCESS_CONTEXT_END(&unicast_process);
+		}
+
+		break;
 	}
 }
 
@@ -85,17 +88,17 @@ PROCESS_THREAD(broadcast_process, ev, data)
 {
 	PROCESS_EXITHANDLER(broadcast_close(&broadcast);)
 
-	PROCESS_BEGIN();
+			PROCESS_BEGIN();
 #ifdef POWERTRACE
 	powertrace_start(CLOCK_SECOND * TIME_POWERTRACE/1000, "BS_P_");
 #endif
-    cc2420_set_txpower(RN_TX_POWER);
+	cc2420_set_txpower(RN_TX_POWER);
 
 	broadcast_open(&broadcast, 129, &broadcast_call);
-	
+
 	static struct etimer et_init;
 	static struct init_packet init_msg;
-	
+
 	// Send the first initialization message after 2 seconds
 	etimer_set(&et_init, CLOCK_SECOND * 2);
 
@@ -110,11 +113,15 @@ PROCESS_THREAD(broadcast_process, ev, data)
 			packetbuf_copyfrom(&init_msg, sizeof(struct init_packet));
 			broadcast_send(&broadcast);
 
-			etimer_set(&et_init, CLOCK_SECOND * RECONFIG_TIMER);
-#ifdef DEBUG
+#ifdef EVALUATION
 			printf("BS_S_CON_SQN_%d_HOP_%d\n", init_msg.routing.seqn, init_msg.routing.hop_nr); // base station - sent - sequence nr
+#endif
+#ifdef DEBUG
 			printf("Init sent: %d!\n", init_msg.routing.hop_nr);
 #endif
+
+			etimer_set(&et_init, CLOCK_SECOND * RECONFIG_TIMER);
+
 		}
 	}
 
@@ -123,29 +130,33 @@ PROCESS_THREAD(broadcast_process, ev, data)
 
 PROCESS_THREAD(unicast_process, ev, data)
 {
-  PROCESS_EXITHANDLER(unicast_close(&unicast);)
-    
-  PROCESS_BEGIN();
+	PROCESS_EXITHANDLER(unicast_close(&unicast);)
 
-  unicast_open(&unicast, 146, &unicast_call);
+		  PROCESS_BEGIN();
 
-  while(1) {
-	  PROCESS_WAIT_EVENT();
-	  		
-	  if (etimer_expired(&et_rnd_ack)){
-		  if (flg_ack_agg){
-		  				
-			  packetbuf_copyfrom(&ack_agg_fwd, sizeof(struct ack_agg_packet));
-			  unicast_send(&unicast, &addr_ack_agg_fwd);
-			  
-			  flg_ack_agg = 0;
-			  etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
-#ifdef DEBUG
-			  printf("BS_S_ACK_ADDR_%d.%d_SEQN_%d", addr_ack_agg_fwd.u8[0], addr_ack_agg_fwd.u8[1], ack_agg_fwd.seqno);
+	unicast_open(&unicast, 146, &unicast_call);
+
+	while(1) {
+		PROCESS_WAIT_EVENT();
+
+		if (etimer_expired(&et_rnd_ack)){
+			if (flg_ack_agg){
+
+				packetbuf_copyfrom(&ack_agg_fwd, sizeof(struct ack_agg_packet));
+				unicast_send(&unicast, &addr_ack_agg_fwd);
+
+				flg_ack_agg = 0;
+#ifdef EVALUATION
+				printf("BS_S_ACK_DST_%d.%d_ADDR_%d.%d_SQN_%d\n", 
+						addr_ack_agg_fwd.u8[0], addr_ack_agg_fwd.u8[1], 
+						ack_agg_fwd.address.u8[0], ack_agg_fwd.address.u8[1], ack_agg_fwd.seqno);
 #endif
-		  }
-	  }
-  }
 
-  PROCESS_END();
+				etimer_set(&et_rnd_ack, (CLOCK_SECOND * RND_TIME_ACK_MIN + random_rand() % (CLOCK_SECOND * RND_TIME_ACK_VAR))/1000);
+
+			}
+		}
+	}
+
+	PROCESS_END();
 }

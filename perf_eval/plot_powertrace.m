@@ -1,19 +1,27 @@
 function plot_powertrace(tbl)
 
-plot all cpu usage for the first relay node
-idx = tbl.ID == relayNodeList(1) & tbl.MsgType == 'P';
+tbl.TimeStamp.Format = 'mm:ss.SSS';
+
+% plot all cpu usage for sensor node 1
+idx = tbl.ID == 1;
 
 figure(1)
-plot(tbl.TimeStamp(idx), tbl.cpu(idx), '*-');
-title('CPU')
-xlabel('time [s]')
+ax(1) = subplot(4,1,1);
+plot(tbl.TimeStamp(idx), tbl.p_cpu(idx), '*-');
+title('Power [mW]')
+ylabel('CPU')
 
-figure(2)
-plot(tbl.TimeStamp(idx), tbl.transmit(idx), '*-');
-title('Transmission')
-xlabel('time [s]')
+ax(2) = subplot(4,1,2);
+plot(tbl.TimeStamp(idx), tbl.p_lpm(idx), '*-');
+ylabel('LPM')
 
-figure(3)
-plot(tbl.TimeStamp(idx), tbl.listen(idx), '*-');
-title('Listening')
-xlabel('time [s]')
+ax(3) = subplot(4,1,3);
+plot(tbl.TimeStamp(idx), tbl.p_tx(idx), '*-');
+ylabel('TX')
+
+ax(4) = subplot(4,1,4);
+plot(tbl.TimeStamp(idx), tbl.p_rx(idx), '*-');
+ylabel('RX')
+xlabel('Time [s]')
+
+linkaxes(ax, 'x')

@@ -23,7 +23,7 @@ clear a
 
 % The Output is a message intended for performance evaluatiion
 tbl.EVAL_MSG = logical(cell2mat(cellfun(@(x) ~isempty(x), ... % && x == 2, ...
-    regexp(tbl.Output, '[(BS)(RN)(SN)]_[PRS]_'), ...
+    regexp(tbl.Output, '[(BS)(RN)(SN)]_[EPRS]_'), ...
     'UniformOutput', false)));
 
 % Node type: BS - base station; RN - relay node; SN - sensor node
@@ -37,7 +37,8 @@ baseStationList = unique(tbl.ID(tbl.NodeType == 'BS'));
 relayNodeList = unique(tbl.ID(tbl.NodeType == 'RN'));
 sensorNodeList = unique(tbl.ID(tbl.NodeType == 'SN'));
 
-% Message type: S - sent; R - received; P - powertrace
+% Message type: S - sent; R - received; P - powertrace; E - extracted
+% sensor packet from aggregated packet
 msg_type = repmat({'UNSPECIFIED'}, height(tbl), 1);
 
 msg_type(tbl.EVAL_MSG) = cellfun(@(x) x(4), tbl.Output(tbl.EVAL_MSG), 'UniformOutput', false);
