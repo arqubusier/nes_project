@@ -764,7 +764,7 @@ there is at least one shorter route and the packet is simply dropped.
 
 Since we are using simulation only to test our implementation, we wanted 
 to generate a more sophisticated mobility scenario. So we used BonnMotion 
-which is java application that can create and analyze many different mobility 
+which is Java application that can create and analyse many different mobility 
 scenarios. The only format than can be used by COOJA is wiseML format. 
 But we found out that the library used  for wiseML format is not implemented 
 yet in the official page of COOJA and its different forums. There was an 
@@ -780,7 +780,7 @@ that matches our mobility requirements: Reference Point Group Mobility model
 Mobility model (Fig.~\ref{fig:nomadic}) where sensor nodes move in groups but some nodes can also 
 move or wait alone. Finally, we ended up using only Nomadic Mobility model because 
 we already have many test scenarios and Nomadic mobility model simulates the cows’ 
-behavior more precisely.
+behaviour more precisely.
 
 \begin{figure}
     \centering
@@ -851,7 +851,25 @@ behavior more precisely.
 In order to evaluate the power consumption of the sensor nodes during the simulations, 
 we used the Powertrace power profiling tool. This tool, part of the ContikiOS, has a 
 94\% accuracy in estimating the power consumption compared to hardware-based power 
-measurements~\cite{powertrace}.
+measurements~\cite{powertrace}. The output of the tool is useful in examining the time 
+spent in different states (e.g. transmission, reception, idle) of the transceiver and MCU.
+Further analysing the data, we can estimate the average current consumption of the sensor node.
+In our simulations we obtained an average current consumption of $I_{SN} = 0.93 mA$. If we presume
+the use of two Energizer E91 Alkaline AA batteries~\cite{EnergizerBattery}, which has a capacity 
+of $C_{battery} = 2500 mAh$, we can, then, estimate the expected lifetime of a sensor node using 
+Eq.~\ref{eq:lifetime}:
+
+\begin{equation}
+\label{eq:lifetime}
+T = \frac{C_{battery}}{I_{SN}}
+\end{equation}
+
+With this calculation we obtain an expected average lifetime of approx. 112 days. This value, 
+however, should be treated carefully and no final conclusion should be drawn from it. First of all
+this is only a simulation based estimation, in which we increased the the sampling frequency
+of data generation. In addition, the use of this tool requires more CPU usages which leads to
+higher consumption. On the other hand, though, we haven't included the current consumption of
+real sensors into the estimation. 
 
 \subsection{Discussion}
 
@@ -1077,6 +1095,9 @@ for local and metropolitan area networks. Part 15.4}, isbn
     A. Dunkels, J. Eriksson, N. Finne and N. Tsiftes, \emph{Powertrace: Network-level Power 
     Profiling for Low-power Wireless Networks.}, Swedish Institute of Computer Science, 
     Technical Report, March 2011.
+    
+\bibitem{EnergizerBattery}
+	Energizer E91 Product Datasheet - http://data.energizer.com/PDFs/E91.pdf
 
 %citation format
     %H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
