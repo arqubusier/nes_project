@@ -582,39 +582,13 @@ application.
 
 \subsection{Simulation Software}
 
-The design of the network will only be tested in simulation, no real world
-experiments will be done. We will use cooja, which is a simulator for contiki
-node. This simulator is compatible with the following platforms: TI MSP430x (TI
-CC2420), TI MSP430x (TI CC2520), Atmel AVR (TI CC2420), TI MSP430 (TI CC2420)
-and TI MSP430 (RFM TR1001).
+Since we decided to make the simulation using COOJA on Contiki OS instead of using 
+real hardware, we tried to make use of the software as much as possible and tested 
+multiple scenarios on it. We also tried to make use of the different functionalities 
+COOJA provides like mobility support and used BonnMotion to generate a more sophisticated 
+mobility scenarios that can roughly match the cows’ movements which is described thoroughly 
+in the mobility section.
 
-The number of nodes that can be simulated using this software depends on memory
-of the machine running the simulation and the application running on the nodes.
-As there is a main simulation thread, using more than two cores (one for the
-simulation and one for the rest) gives no significant
-improvement~\cite{contikidev}.
-
-To simulate the movement of the cows in Cooja, a mobility plugin first has to
-be installed. However, to be able to generate our own specific mobility file,
-another tool like BonnMotion has to be used to make the mobility output format
-compatible with Cooja’s mobility plugin format. We will only be considering
-a few simple mobility models like: the gauss-markov-, the random waypoint- and
-the reference point group mobility models. Simulating more complex and accurate
-mobility patterns of the cows is not the goal of this project.
-
-To provide a reliable transmission range, there is a UDGM (Unit Disk Graph
-Radio Medium) implementation that can be configured to change some parameters
-like transmission range and interference range. Depending on the transmission
-power parameter, the resulting transmission range will
-differ~\cite{contikidev}.
-
-Contiki supports different MAC layers: X-MAC, LLP (Low Power Probing), Simple
-TDMA and nullmac (non-persistent CSMA).  X-MAC and LPP are low power MACs that
-work best under low traffic loads~\cite{coojacrash}.  Furthermore, Contiki
-supports different protocol stacks like uIP which is a very small and fully
-compliant TCP/IP stack. Contiki also supports Rime stack which consists of
-small layers built on top of each other and has single and multi-hop
-broadcast~\cite{coojacrash}.
 \subsection{Network Topology}
 
 \begin{figure}
@@ -702,6 +676,29 @@ of these arguments, the design will use the nonbeacon-enabled mode. However, as
 contiki does not implement unslotted CSMA/CA, we will use one of the
 congestion-based MAC layers that contiki provides, in its place.
 
+Contiki Operating System uses a little bit different network stack than the usual 
+5 layer TCP/IP model. The Medium Access Control (MAC) Layer usually resides between 
+the Physical and the network layer. Contiki uses 2 more layer under the MAC layer and 
+above the physical layer which are: Radio Duty-Cycle (RDC) and Framer layers as in 
+the figure. The three different layers can be changed through the global variables 
+NETSTACK\_FRAMER, NETSTACK\_RDC and NETSTACK\_MAC, these variables are defined in compilation time.
+
+Framer layer has some auxiliary functions for building the frame with data to be transmitted or 
+parsing the received data. Since we only want the basic functions from this layer, we used the 
+protocol framer-contikimac.
+
+Radio Duty-Cycle (RDC) layer is the most crucial layer as it is the one responsible of 
+the sleep period of the nodes, it also manages when the packets will be transmitted 
+and at the same time makes sure that the nodes are awake when receiving packets. 
+We used ContikiMAC since it uses a simple but efficient timing scheme to allow its wake-up 
+mechanism to be highly power efficient~\cite{ContikiDutyCycling}. Results mentioned in~\cite{ContikiMacProt} show that using 
+ContikiMAC reduced the average duty-cycle from 17\% to 9\%, which makes the energy consumption 
+of the nodes drastically more efficient.  
+
+For the MAC layer, we used Carrier-Sense Medium Access (CSMA) protocol, as it contains 
+addressing, sequence number and retransmissions which are crucially needed in our 
+application other than the default nullmac protocol.
+
 \subsection{Network- and Application Layer}
 
 \subsubsection{Packet Structure}
@@ -719,6 +716,26 @@ congestion-based MAC layers that contiki provides, in its place.
 \section{Performance Evaluation}
 
 \subsection{Mobility Models}
+
+Since we are using simulation only to test our implementation, we wanted 
+to generate a more sophisticated mobility scenario. So we used BonnMotion 
+which is java application that can create and analyze many different mobility 
+scenarios. The only format than can be used by COOJA is wiseML format. 
+But we found out that the library used  for wiseML format is not implemented 
+yet in the official page of COOJA and its different forums. There was an 
+implementation for such format done by CONET (the Cooperating Objects NETwork 
+of Excellence), but the cooja-wiseml extension was not yet publicly available 
+and they have CONET version of Instant Contiki with all their implementations 
+installed, but the download link expired. So we implemented a python script to 
+convert the wiseml format mobility file to the dat format used by COOJA. 
+
+BonnMotion offers nearly 21 mobility scenarios, we used 2 mobility scenarios 
+that matches our mobility requirements: Reference Point Group Mobility model 
+(Figure 1) where sensor nodes are moving in groups uniformly and Nomadic Community 
+Mobility model (Figure 2) where sensor nodes move in groups but some nodes can also 
+move or wait alone. Finally, we ended up using only Nomadic Mobility model because 
+we already have many test scenarios and Nomadic mobility model simulates the cows’ 
+behavior more precisely.
 
 \subsection{Test Scenarios}
 
@@ -768,6 +785,11 @@ congestion-based MAC layers that contiki provides, in its place.
     R and M denote the number of relay nodes and the mobility type, respectively}
     \label{fig:results_bar}
 \end{figure}
+
+In order to evaluate the power consumption of the sensor nodes during the simulations, 
+we used the Powertrace power profiling tool. This tool, part of the ContikiOS, has a 
+94\% accuracy in estimating the power consumption compared to hardware-based power 
+measurements~\cite{powertrace}.
 
 \subsection{Discussion}
 
@@ -983,14 +1005,16 @@ and Electronics Engineers and IEEE-SA Standards Board, \emph{IEEE standard
 for local and metropolitan area networks. Part 15.4}, isbn
 978-0-7381-6684-1, Institute of Electrical and Electronics Engineers, 2011,
 
-\bibitem{contikidev}
-    
-http://contiki-developers.narkive.com, taken 13.00 22 sep 2015.
+\bibitem{ContikiMacProt}
+	MAC Protcols in Contiki - http://anrg.usc.edu/contiki/index.php/MAC\_protocols\_in\_ContikiOS
 
-\bibitem{coojacrash}
-    V. ~Thiemo, F. ~Österlind and A. ~Dunkels, \emph{Contiki COOJA Hands-on
-    Crash Course: Session Notes}, Swedish Institute of Computer Science CONET
-    Summer School, July 2009.
+\bibitem{ContikiDutyCycling}
+	A. ~Dunkels, \emph{The ContikiMAC Radio Duty Cycling Protocol.}, SICS Technical Report, December 2011.
+
+\bibitem{powertrace}
+    A. Dunkels, J. Eriksson, N. Finne and N. Tsiftes, \emph{Powertrace: Network-level Power 
+    Profiling for Low-power Wireless Networks.}, Swedish Institute of Computer Science, 
+    Technical Report, March 2011.
 
 %citation format
     %H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
