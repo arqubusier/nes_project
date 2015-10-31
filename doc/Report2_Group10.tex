@@ -450,7 +450,7 @@ penetration through animal's body and they proposed a two antennae scheme for
 an optimized radio coverage of the cattle's neck collar. In this project we
 will not consider the interference caused by the body of the cows.
 
-\section{Application Specific Challenges}
+\section{Application Specific Challenges} \label{sec:cha}
 
 \subsection{Mobility}
 
@@ -506,37 +506,16 @@ must be low-cost with high lifespan and low maintenance in order to reduce the
 cost of managing the system. Another reason for the sensor nodes to be low-cost
 is the potentially high number of nodes needed for monitoring an entire herd.
 
-\section{Requirements}
-
-To ensure that the designed system can meet the challenges described in chapter II, it
-needs to meet the following requirements:
-
-\begin{enumerate} 
-
-    \item The network must be implemented in such a way that if a sensor node
-        moves out of coverage, the sensor node will be reassigned to the
-        network once it moves into coverage again.  
-        
-    \item The end-to-end latency between the sensor nodes and the base station
-        must be less than 2 minutes for at least 90 \% of data packets.
-        
-    \item For every sensor node at least 70 \% of the recorded sensor data must
-        be delivered to the base station during a 5 hour period.
-        
-    \item The time until the first sensor node of the network fails must be
-        greater than one year.  
-        
-    \item The network must function and be scalable for up to 30 sensor nodes.
-        
-    \item The network must continue to function whether nodes are added or
-        removed.
-    
-    \item When out of coverage, each sensor node must be able to store sensor
-        values for a period of up to four hours.
-
-\end{enumerate}
+\section{Application Specific Parameters} \label{sec:cons}
 
 \subsection{Herd size}
+
+According to Eurostat, the statistical office of the European Union, the
+average number of livestock units (LSU) per ha is 3.35 in the
+Netherlands.~\cite{eurostat} LSU is a reference unit to compare the feeding
+needs of different livestock species, in the case of dairy cows, this value is
+1.0.  The result of this is that on average on a field of 10 ha, 33.5, or
+approximately 30 cows will held.
 
 \subsection{Resting Time}
 
@@ -567,6 +546,36 @@ describe the behaviour.
 If five samples for each category are generated, the total data amount needed to
 be sent each five minute interval would be 15 bytes.
 
+\section{requirements}
+
+To ensure that the designed system can meet the challenges described in section
+\ref{sec:cha}, taking into account the parameters presented in section
+\ref{sec:cons}, it needs to meet the following requirements:
+
+\begin{enumerate} 
+
+    \item The network must be implemented in such a way that if a sensor node
+        moves out of coverage, the sensor node will be reassigned to the
+        network once it moves into coverage again.  
+        
+    \item The end-to-end latency between the sensor nodes and the base station
+        must be less than 2 minutes for at least 90 \% of data packets.
+        
+    \item For every sensor node at least 70 \% of the recorded sensor data must
+        be delivered to the base station during a 5 hour period.
+        
+    \item The time until the first sensor node of the network fails must be
+        greater than one year.  
+        
+    \item The network must function and be scalable for up to 30 sensor nodes.
+        
+    \item The network must continue to function whether nodes are added or
+        removed.
+    
+    \item When out of coverage, each sensor node must be able to store sensor
+        values for a period of up to four hours.
+
+\end{enumerate}
 
 \section{Implementation}
 
@@ -1109,6 +1118,10 @@ for local and metropolitan area networks. Part 15.4}, isbn
     A. Dunkels, J. Eriksson, N. Finne and N. Tsiftes, \emph{Powertrace: Network-level Power 
     Profiling for Low-power Wireless Networks.}, Swedish Institute of Computer Science, 
     Technical Report, March 2011.
+
+\bibitem{eurostat}
+    Livestock Density Index
+    - http://ec.europa.eu/eurostat/tgm/table.do?tab=table\&init=1\&language=en\&pcode=tsdpc450\&plugin=1
 
 %citation format
     %H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
