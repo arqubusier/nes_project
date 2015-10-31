@@ -265,7 +265,7 @@
 % The latest version can be found at:
 % http://www.ctan.org/pkg/dblfloatfix
 
-
+\usepackage{subcaption}
 
 
 % *** PDF, URL AND HYPERLINK PACKAGES ***
@@ -776,11 +776,28 @@ convert the wiseml format mobility file to the dat format used by COOJA.
 
 BonnMotion offers nearly 21 mobility scenarios, we used 2 mobility scenarios 
 that matches our mobility requirements: Reference Point Group Mobility model 
-(Figure 1) where sensor nodes are moving in groups uniformly and Nomadic Community 
-Mobility model (Figure 2) where sensor nodes move in groups but some nodes can also 
+(Fig.~\ref{fig:rpgm}) where sensor nodes are moving in groups uniformly and Nomadic Community 
+Mobility model (Fig.~\ref{fig:nomadic}) where sensor nodes move in groups but some nodes can also 
 move or wait alone. Finally, we ended up using only Nomadic Mobility model because 
 we already have many test scenarios and Nomadic mobility model simulates the cows’ 
 behavior more precisely.
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.22\textwidth}
+        \includegraphics[trim= 140 420 140 50, clip, width=\textwidth]{Nomadic_Model.pdf}
+        \caption{RPGM}
+        \label{fig:rpgm}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+      %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.22\textwidth}
+        \includegraphics[trim= 100 350 100 90, clip, width=\textwidth]{RPGM_Model.pdf}
+        \caption{Nomadic}
+        \label{fig:nomadic}
+    \end{subfigure}
+    \caption{Mobility models}\label{fig:mobility_models}
+\end{figure}
 
 \subsection{Test Scenarios}
 
