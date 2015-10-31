@@ -723,7 +723,7 @@ There are 5 types of packet used in the network.
     aggregated packets.
 \end{itemize}
 
-\subsubsection{Routing Mechanism}
+\subsubsection{Routing Mechanism} \label{sec:routing}
 
 The network uses directed gossiping to route data from the sensor nodes to the
 base station. In our implementation, this method works by making sure that each
@@ -755,11 +755,43 @@ there is at least one shorter route and the packet is simply dropped.
 
 \subsubsection{Sensor Node}
 
+The sensor nodes has two process working in tandem. The first process
+periodically generates sensor data and puts it inside a queue. The second
+process tries to send the first item in the queue a few times, sleeping a short
+time in between, and then sleeps for a longer time before repeating itself. As
+soon as the sensor nodes receives a sensor acknowledge packet from a relay
+node, it will remove the first item in the queue, and try to transmit the next
+one.
+
 \subsubsection{Relay Node}
+
+To reduce the number of packets needed to be transmitted, each relay node keeps
+a current aggregated packet, which it places received sensor packets inside,
+instead of fordwarding them immediately. When the current aggregated packet is
+full, or when a timeout timer has run out (the timer is reset upon receiving
+a sensor packet), the packet is locked for transmission, and is not updated
+until it has received an aggregated acknowledge.
+
+When the current aggregated packet is locked, new sensor packets are placed in
+a temporary aggregated packet. The contents of the temporary packet are written
+to the current packet, when the latter is unlocked.
+
+When a relay node receives an aggregated packet from another relay node, it
+will try to forward it according to the routing mechanism explained in section
+\ref{sec:routing}
+
+Every time a sensor packet is successfully saved in a relay node, a sensor
+acknowledge will be sent to the sensor node that sent this packet; if the
+packet was dropped in a relay node, no acknowledge is sent. This system is
+designed to prevent packet loss: sensor nodes will keep sensor packets until
+they have been received by a relay node, and each relay node will keep
+aggregated packets until they have been received by another relay node.
 
 \subsubsection{Base Station}
 
-
+The base station simply sends init packets at regular intervals, to initiate
+routing configuration and listens for aggregated packets sent by the nearest
+relay nodes. 
 
 \section{Performance Evaluation}
 
