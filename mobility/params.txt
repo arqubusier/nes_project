@@ -1,0 +1,12 @@
+./bm -f Nomadic30t20 Nomadic -n 30 -d 1200 -i 3600 -x 320 -y 320 -h 5 -l 1 -p 10 -a 7 -r 7 -c 7
+
+./bm WiseML -f Nomadic30t20 -L 0.5
+
+
+./bm -f Nomadic30t20 Nomadic -n 30 -d 1200 -i 3600 -x 320 -y 320 -h 3 -l 0.5 -p 7 -a 7 -r 7 -c 5
+
+./bm WiseML -f Nomadic30t20 -L 0.5
+
+./bm -f complexRPGM RPGM -n 15 -d 500 -i 3600 -x 320 -y 320 -h 10 -l 5 -p 1 -a 3 -c 0.5 -r 5
+
+./bm WiseML -f complexRPGM -L 0.5
