@@ -597,6 +597,11 @@ model the effects of the environment, for example the shadowing of vegetation
 and cows blocking the line of sight. The consequences of only doing simulations
 will be examined further in section \ref{sec:discussion}.
 
+Another consequence of using simulations is that we cannot use actual sensors
+to generate data. Instead we use randomization to generate the data. Since
+processing the sensor's raw outputs would infer some extra complexity, this
+needs to be taken into account when evaluating the performance.
+
 Since we decided to make the simulation using Cooja on Contiki OS instead of
 using real hardware, we tried to make use of the software as much as possible
 and tested multiple scenarios on it. We also tried to make use of the different
@@ -615,8 +620,6 @@ run simulations with that were only 20 minutes in simulated time. To compensate
 for the short simulation time, we decided to stress test the network by
 increasing the generation and transmission of sensor packets fivefold.
 
-Becaus
-
 \subsection{Mobility Models} \label{sec:mobility}
 
 Since we are using simulation only to test our implementation, we wanted 
@@ -631,12 +634,31 @@ and they have CONET version of Instant Contiki with all their implementations
 installed, but the download link expired. So we implemented a python script to 
 convert the wiseml format mobility file to the dat format used by COOJA. 
 
-BonnMotion offers nearly 21 mobility scenarios, we used 2 mobility scenarios 
-that matches our mobility requirements: Reference Point Group Mobility model (RPGM) 
-(Fig.~\ref{fig:rpgm}) where sensor nodes are moving in groups uniformly and Nomadic Community 
-Mobility model (Fig.~\ref{fig:nomadic}) where sensor nodes move in groups but some nodes can also 
-move or wait alone. Finally, we ended up using only Nomadic Mobility model because 
-we found it to simulates the cows’ behaviour more precisely than RPGM.
+BonnMotion offers nearly 21 mobility scenarios, we used 2 mobility scenarios
+that matches our mobility requirements: Reference Point Group Mobility model
+(RPGM) (Fig.~\ref{fig:rpgm}) where sensor nodes are moving in groups uniformly
+and Nomadic Community Mobility model (Fig.~\ref{fig:nomadic}) where sensor
+nodes move in groups but some nodes can also move or wait alone. Finally, we
+ended up using only Nomadic Mobility model because we found it to simulates the
+cows’ behaviour more precisely than RPGM.
+
+To generate the Nomadic Mobility models, we ran BonnMotion with the following
+parameters, where XX denotes the number of sensor nodes:
+
+\begin{enumerate}
+    \item
+        \begin{verbatim}
+./bm -f Nomadic30t20 Nomadic -n XX\
+    -d 1200 -i 3600 -x 320 -y 320\
+    -h 5 -l 1 -p 10 -a 7 -r 7 -c 7
+        \end{verbatim}
+    \item
+        \begin{verbatim}
+./bm -f Nomadic30t20 Nomadic -n XX\
+    -d 1200 -i 3600 -x 320 -y 320\
+    -h 3 -l 0.5 -p 7 -a 7 -r 7 -c 5
+        \end{verbatim}
+\end{enumerate}
 
 \begin{figure}
     \centering
@@ -670,9 +692,8 @@ The network was tested with the following parameters:
     \item 6 an 12 relay nodes, see fig \ref{fig:mobility_models} and fig
         \ref{fig:relay_nodes} (relay nodes are magenta colored)
         for the layout of the relay nodes;
-    \item 2 different configurations of the nomadic mobility model one with
-        the parameters: 
-        ;
+    \item 2 different configurations of the nomadic mobility model
+        (see section \ref{sec:mobility});
     \item a field size of 320 m by 320 m.
 \end{itemize}
 
@@ -894,7 +915,7 @@ to the current packet, when the latter is unlocked.
 
 When a relay node receives an aggregated packet from another relay node, it
 will try to forward it according to the routing mechanism explained in section
-\ref{sec:routing}
+\ref{sec:routing}.
 
 Every time a sensor packet is successfully saved in a relay node, a sensor
 acknowledge will be sent to the sensor node that sent this packet; if the
@@ -925,7 +946,7 @@ relay nodes.
                                                                                            & 2                                                                                 & 48                                       & 97.3                                              & 77.89                                                                                              \\ \hline
 \multirow{2}{*}{15}                                                                        & 1                                                                                 & 41.71                                    & 94.1                                              & 41.75                                                                                              \\ \cline{2-5} 
                                                                                            & 2                                                                                 & 24.73                                    & 97.3                                              & 77.54                                                                                              \\ \hline
-\multirow{2}{*}{30}                                                                        & 1  game theory                                                                               & 14.9                                     & 99.6                                              & 81.75                                                                                              \\ \cline{2-5} 
+\multirow{2}{*}{30}                                                                        & 1                                                                               & 14.9                                     & 99.6                                              & 81.75                                                                                              \\ \cline{2-5} 
                                                                                            & 2                                                                                 & 19.17                                    & 98.6                                              & 62.11                                                                                              \\ \hline
 \end{tabular}
 \end{table}
