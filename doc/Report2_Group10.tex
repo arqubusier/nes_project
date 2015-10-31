@@ -585,25 +585,127 @@ To ensure that the designed system can meet the challenges described in section
 
 \end{enumerate}
 
+\section{Evaluation Method}
+
+The system was first implemented using the ContikiOs for TelosB/Sky nodes, and
+later evaluated using the Cooja simulator. The reason for choosing simulation
+over real life experiments, is in part due to time and resource contraints, and
+in part due to the fact that simulations allows for a more rapid work flow.
+
+There is one downside to using simulations however. It is hard to accurately
+model the effects of the environment, for example the shadowing of vegetation
+and cows blocking the line of sight. The consequences of only doing simulations
+will be examined further in section \ref{sec:discussion}.
+
+Since we decided to make the simulation using Cooja on Contiki OS instead of
+using real hardware, we tried to make use of the software as much as possible
+and tested multiple scenarios on it. We also tried to make use of the different
+functionalities Cooja provides like mobility support and used BonnMotion to
+generate a more sophisticated mobility scenarios that can roughly match the
+cows’ movements which is described thoroughly in section \ref{sec:mobility}.
+
+Three different things were measured during the simulations: the end-to-end latency
+between sensor nodes and base station, the PDR from sensor node to base station,
+and finally the energy consumption of the sensor nodes.
+
+Ideally, each simulations would be run for at least one day to get a good
+picture of the network's performance. However, because of time and resource
+constraints, combined with our desire to test several parameters, we opted to
+run simulations with that were only 20 minutes in simulated time. To compensate
+for the short simulation time, we decided to stress test the network by
+increasing the generation and transmission of sensor packets fivefold.
+
+Becaus
+
+\subsection{Mobility Models} \label{sec:mobility}
+
+Since we are using simulation only to test our implementation, we wanted 
+to generate a more sophisticated mobility scenario. So we used BonnMotion 
+which is Java application that can create and analyse many different mobility 
+scenarios. The only format than can be used by COOJA is wiseML format. 
+But we found out that the library used  for wiseML format is not implemented 
+yet in the official page of COOJA and its different forums. There was an 
+implementation for such format done by CONET (the Cooperating Objects NETwork 
+of Excellence), but the cooja-wiseml extension was not yet publicly available 
+and they have CONET version of Instant Contiki with all their implementations 
+installed, but the download link expired. So we implemented a python script to 
+convert the wiseml format mobility file to the dat format used by COOJA. 
+
+BonnMotion offers nearly 21 mobility scenarios, we used 2 mobility scenarios 
+that matches our mobility requirements: Reference Point Group Mobility model (RPGM) 
+(Fig.~\ref{fig:rpgm}) where sensor nodes are moving in groups uniformly and Nomadic Community 
+Mobility model (Fig.~\ref{fig:nomadic}) where sensor nodes move in groups but some nodes can also 
+move or wait alone. Finally, we ended up using only Nomadic Mobility model because 
+we found it to simulates the cows’ behaviour more precisely than RPGM.
+
+\begin{figure}
+    \centering
+    \begin{subfigure}[b]{0.22\textwidth}
+        \includegraphics[trim= 140 420 140 50, clip, width=\textwidth]{Nomadic_Model.pdf}
+        \caption{RPGM}
+        \label{fig:rpgm}
+    \end{subfigure}
+    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
+      %(or a blank line to force the subfigure onto a new line)
+    \begin{subfigure}[b]{0.22\textwidth}
+        \includegraphics[trim= 100 350 100 90, clip, width=\textwidth]{RPGM_Model.pdf}
+        \caption{Nomadic}
+        \label{fig:nomadic}
+    \end{subfigure} \caption{Mobility models}\label{fig:mobility_models}
+\end{figure}
+
+\subsection{Test Scenarios}
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.3, keepaspectratio]{Relay_Nodes.pdf}
+    \caption{Relay node configuration with 12 relay nodes}
+    \label{fig:relay_nodes}
+\end{figure}
+
+The network was tested with the following parameters:
+
+\begin{itemize}
+    \item 5, 15, and 30 sensor nodes;
+    \item 6 an 12 relay nodes, see fig \ref{fig:mobility_models} and fig
+        \ref{fig:relay_nodes} (relay nodes are magenta colored)
+        for the layout of the relay nodes;
+    \item 2 different configurations of the nomadic mobility model one with
+        the parameters: 
+        ;
+    \item a field size of 320 m by 320 m.
+\end{itemize}
+
+This resulted in twelve different test scenarios.
+
+\subsection{Data Extraction} 
+
+To measure the latency and the PDR, data was extracted by using Cooja's built
+in printf functionality which outputs data to the serial UART port. At all
+places where a packet was transmitted or received, a printf with a string
+identifying: the node type; the node id; if the packet was sent, received, or
+delivered to the base station; and data related to the packet type.
+Additionally, printfs were used to show the sensor samples that were generated
+in the sensor node. The data was finally saved to a text file using Cooja's
+loglistner.
+
+In order to evaluate the power consumption of the sensor nodes during the
+simulations, we used the Powertrace power profiling tool. This tool, is part of
+the ContikiOS, and has a 94\% accuracy in estimating the power consumption
+compared to hardware-based power measurements~\cite{powertrace}.  The output of
+the tool is useful in examining the time spent in different states (e.g.
+transmission, reception, idle) of the transceiver and MCU. The data from the
+powertrace tool was saved in the same text file as mentioned above.
+
+The recorded data was analyzed with a Matlab script that calculated the average
+PDR, the average end-to-end latency, and the average energy consumption.
+
+While this method is very powerful in that a lot of data can be gathered, using
+a lot of printfs has a noticeable effect on the cpu usage. This can in turn
+affect the energy consumption.
+
+
 \section{Implementation}
-
-CHANGE THIS
-
-The system will be developed for platforms supporting ContikiOs. For the
-physical- and MAC layers, the standard protocol IEEE 802.15.4~\cite{ieee802154}
-will be used.  For the network- and application layer, features from ContikiOs
-will be used.  Moreover, a routing algorithm might possibly be designed, if the
-routing algorithms present in ContikiOs are deemed unfitting for our
-application. 
-
-\subsection{Simulation Software}
-
-Since we decided to make the simulation using COOJA on Contiki OS instead of using 
-real hardware, we tried to make use of the software as much as possible and tested 
-multiple scenarios on it. We also tried to make use of the different functionalities 
-COOJA provides like mobility support and used BonnMotion to generate a more sophisticated 
-mobility scenarios that can roughly match the cows’ movements which is described thoroughly 
-in the mobility section.
 
 \subsection{Network Topology}
 
@@ -809,49 +911,6 @@ relay nodes.
 
 \section{Performance Evaluation}
 
-\subsection{Mobility Models}
-
-Since we are using simulation only to test our implementation, we wanted 
-to generate a more sophisticated mobility scenario. So we used BonnMotion 
-which is Java application that can create and analyse many different mobility 
-scenarios. The only format than can be used by COOJA is wiseML format. 
-But we found out that the library used  for wiseML format is not implemented 
-yet in the official page of COOJA and its different forums. There was an 
-implementation for such format done by CONET (the Cooperating Objects NETwork 
-of Excellence), but the cooja-wiseml extension was not yet publicly available 
-and they have CONET version of Instant Contiki with all their implementations 
-installed, but the download link expired. So we implemented a python script to 
-convert the wiseml format mobility file to the dat format used by COOJA. 
-
-BonnMotion offers nearly 21 mobility scenarios, we used 2 mobility scenarios 
-that matches our mobility requirements: Reference Point Group Mobility model 
-(Fig.~\ref{fig:rpgm}) where sensor nodes are moving in groups uniformly and Nomadic Community 
-Mobility model (Fig.~\ref{fig:nomadic}) where sensor nodes move in groups but some nodes can also 
-move or wait alone. Finally, we ended up using only Nomadic Mobility model because 
-we already have many test scenarios and Nomadic mobility model simulates the cows’ 
-behaviour more precisely.
-
-\begin{figure}
-    \centering
-    \begin{subfigure}[b]{0.22\textwidth}
-        \includegraphics[trim= 140 420 140 50, clip, width=\textwidth]{Nomadic_Model.pdf}
-        \caption{RPGM}
-        \label{fig:rpgm}
-    \end{subfigure}
-    ~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
-      %(or a blank line to force the subfigure onto a new line)
-    \begin{subfigure}[b]{0.22\textwidth}
-        \includegraphics[trim= 100 350 100 90, clip, width=\textwidth]{RPGM_Model.pdf}
-        \caption{Nomadic}
-        \label{fig:nomadic}
-    \end{subfigure}
-    \caption{Mobility models}\label{fig:mobility_models}
-\end{figure}
-
-\subsection{Test Scenarios}
-
-\subsection{Data Extraction} 
-
 \subsection{Results}
 
 \begin{table}[]
@@ -897,15 +956,11 @@ behaviour more precisely.
     \label{fig:results_bar}
 \end{figure}
 
-In order to evaluate the power consumption of the sensor nodes during the simulations, 
-we used the Powertrace power profiling tool. This tool, part of the ContikiOS, has a 
-94\% accuracy in estimating the power consumption compared to hardware-based power 
-measurements~\cite{powertrace}. The output of the tool is useful in examining the time 
-spent in different states (e.g. transmission, reception, idle) of the transceiver and MCU.
-Further analysing the data, we can estimate the average current consumption of the sensor node.
-In our simulations we obtained an average current consumption of $I_{SN} = 0.93 mA$. If we presume
-the use of two Energizer E91 Alkaline AA batteries~\cite{EnergizerBattery}, which has a capacity 
-of $C_{battery} = 2500 mAh$, we can, then, estimate the expected lifetime of a sensor node using 
+From the powertrace tool, we can estimate the average current consumption of
+the sensor node.  In our simulations we obtained an average current consumption
+of $I_{SN} = 0.93 mA$.  If we presume the use of two Energizer E91 Alkaline AA
+batteries~\cite{EnergizerBattery}, which has a capacity of $C_{battery} = 2500
+mAh$, we can, then, estimate the expected lifetime of a sensor node using
 Eq.~\ref{eq:lifetime}:
 
 \begin{equation}
@@ -914,13 +969,14 @@ T = \frac{C_{battery}}{I_{SN}}
 \end{equation}
 
 With this calculation we obtain an expected average lifetime of approx. 112 days. This value, 
-however, should be treated carefully and no final conclusion should be drawn from it. First of all
-this is only a simulation based estimation, in which we increased the the sampling frequency
-of data generation. In addition, the use of this tool requires more CPU usages which leads to
-higher consumption. On the other hand, though, we haven't included the current consumption of
-real sensors into the estimation. 
+however, should be treated carefully and no final conclusion should be drawn
+from it. First of all this is only a simulation based estimation, in which we
+increased the sampling frequency of data generation. In addition, the use of
+this tool requires more CPU usages which leads to higher consumption. On the
+other hand, though, we haven't included the current consumption of real sensors
+into the estimation. 
 
-\subsection{Discussion}
+\subsection{Discussion} \label{sec:discussion}
 
 \section{Conclusion}
 
