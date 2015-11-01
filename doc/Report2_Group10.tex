@@ -566,41 +566,45 @@ To ensure that the designed system can meet the challenges described in section
         moves out of coverage, the sensor node will be reassigned to the
         network once it moves into coverage again.  
         
-    \item The end-to-end latency between the sensor nodes and the base station
-        must be less than 2 minutes for at least 90 \% of data packets.
-        
-    \item For every sensor node at least 70 \% of the recorded sensor data must
-        be delivered to the base station during a 5 hour period.
-        
-    \item The time until the first sensor node of the network fails must be
-        greater than one year.  
-        
-    \item The network must function and be scalable for up to 30 sensor nodes.
-        
     \item The network must continue to function whether nodes are added or
         removed.
     
     \item When out of coverage, each sensor node must be able to store sensor
         values for a period of up to four hours.
 
+    \item The end-to-end latency between the sensor nodes and the base station
+        must be less than 2 minutes for at least 90 \% of data packets.
+        
+    \item For every sensor node at least 70 \% of the recorded sensor data must
+        be delivered to the base station during a 5 hour period.
+        
+    \item The network must function and be scalable for up to 30 sensor nodes.
+
+    \item The time until the first sensor node of the network fails must be
+        greater than one year.  
+        
 \end{enumerate}
 
 \section{Evaluation Method}
 
 The system was first implemented using the ContikiOs for TelosB/Sky nodes, and
-later evaluated using the Cooja simulator. The reason for choosing simulation
-over real life experiments, is in part due to time and resource contraints, and
-in part due to the fact that simulations allows for a more rapid work flow.
+later evaluated using the Cooja simulaton software. The reason for choosing
+simulation over real life experiments, is in part due to time and resource
+contraints, and in part due to the fact that simulations allows for a more
+rapid work flow.
 
 There is one downside to using simulations however. It is hard to accurately
 model the effects of the environment, for example the shadowing of vegetation
-and cows blocking the line of sight. The consequences of only doing simulations
-will be examined further in section \ref{sec:discussion}.
+and cows blocking the line of sight. Also, one of the limitations with the
+Cooja simulaton software is that nodes cannot be added after the simulation has
+started.
 
 Another consequence of using simulations is that we cannot use actual sensors
 to generate data. Instead we use randomization to generate the data. Since
 processing the sensor's raw outputs would infer some extra complexity, this
-needs to be taken into account when evaluating the performance.
+needs to be taken into account when evaluating the performance. The
+consequences of only doing simulations will be examined further in section
+\ref{sec:discussion}.
 
 Since we decided to make the simulation using Cooja on Contiki OS instead of
 using real hardware, we tried to make use of the software as much as possible
@@ -648,13 +652,13 @@ parameters, where XX denotes the number of sensor nodes:
 \begin{enumerate}
     \item
         \begin{verbatim}
-./bm -f Nomadic30t20 Nomadic -n XX\
+bm -f Nomadic30t20 Nomadic -n XX\
     -d 1200 -i 3600 -x 320 -y 320\
     -h 5 -l 1 -p 10 -a 7 -r 7 -c 7
         \end{verbatim}
     \item
         \begin{verbatim}
-./bm -f Nomadic30t20 Nomadic -n XX\
+bm -f Nomadic30t20 Nomadic -n XX\
     -d 1200 -i 3600 -x 320 -y 320\
     -h 3 -l 0.5 -p 7 -a 7 -r 7 -c 5
         \end{verbatim}
@@ -689,7 +693,7 @@ The network was tested with the following parameters:
 
 \begin{itemize}
     \item 5, 15, and 30 sensor nodes;
-    \item 6 an 12 relay nodes, see fig \ref{fig:mobility_models} and fig
+    \item 6 an 12 relay nodes, see Fig.~\ref{fig:mobility_models} and Fig.~
         \ref{fig:relay_nodes} (relay nodes are magenta colored)
         for the layout of the relay nodes;
     \item 2 different configurations of the nomadic mobility model
@@ -934,22 +938,55 @@ relay nodes.
 
 \subsection{Results}
 
-\begin{table}[]
-\centering
-\caption{Latency and PDR Using 6 Relay Nodes}
-\label{tbl:r6}
-\begin{tabular}{|c|c|r|r|r|}
-\hline
-\multirow{2}{*}{\textbf{\begin{tabular}[c]{@{}c@{}}Number of\\ sensor nodes\end{tabular}}} & \multirow{2}{*}{\textbf{\begin{tabular}[c]{@{}c@{}}Mobility\\ Type\end{tabular}}} & \multicolumn{2}{c|}{\textbf{Latency}}                                                        & \multicolumn{1}{c|}{\multirow{2}{*}{\textbf{\begin{tabular}[c]{@{}c@{}}PDR \\ (\%)\end{tabular}}}} \\ \cline{3-4}
-                                                                                           &                                                                                   & \multicolumn{1}{c|}{\textbf{Avg. (sec)}} & \multicolumn{1}{c|}{\textbf{\textless2 min (\%)}} & \multicolumn{1}{c|}{}                                                                              \\ \hline
-\multirow{2}{*}{5}                                                                         & 1                                                                                 & 44.85                                    & 90                                                & 31.58                                                                                              \\ \cline{2-5} 
-                                                                                           & 2                                                                                 & 48                                       & 97.3                                              & 77.89                                                                                              \\ \hline
-\multirow{2}{*}{15}                                                                        & 1                                                                                 & 41.71                                    & 94.1                                              & 41.75                                                                                              \\ \cline{2-5} 
-                                                                                           & 2                                                                                 & 24.73                                    & 97.3                                              & 77.54                                                                                              \\ \hline
-\multirow{2}{*}{30}                                                                        & 1                                                                               & 14.9                                     & 99.6                                              & 81.75                                                                                              \\ \cline{2-5} 
-                                                                                           & 2                                                                                 & 19.17                                    & 98.6                                              & 62.11                                                                                              \\ \hline
-\end{tabular}
-\end{table}
+According to the results of the simulation, the network seems to reassign nodes
+that move in and out of coverage correctly. Because we used mobility models,
+and the relay nodes did not cover the field completely, there were several
+instance where the sensor nodes moved out of coverage. In all of these cases,
+the sensor nodes were all able to deliver sensor packets, once they moved into
+coverage again. From our experiments, the first requirement appears to be
+satisfied.
+
+In our simulation, the network was shown to function correctly with different
+number of relay nodes and sensor nodes. But because of limitations with Cooja
+we could not explicitly test on-the-fly additions of relay nodes after
+a simulation had started.
+
+Although we designed the buffers in the sensor nodes to be able to store more
+than four hours' worth of sensor data, we did not run any simulations with
+a length of more than four hours to test this. Hovewer, we were able to show
+that they were capable of storing at least one and a half hours' worth of
+sensor data.
+
+\begin{table}[] \centering \caption{Latency and PDR Using 6 Relay Nodes}
+\label{tbl:r6} \begin{tabular}{|c|c|r|r|r|} \hline
+\multirow{2}{*}{\textbf{\begin{tabular}[c]{@{}c@{}}Number of\\ sensor
+nodes\end{tabular}}}
+& \multirow{2}{*}{\textbf{\begin{tabular}[c]{@{}c@{}}Mobility\\
+Type\end{tabular}}} & \multicolumn{2}{c|}{\textbf{Latency}}
+& \multicolumn{1}{c|}{\multirow{2}{*}{\textbf{\begin{tabular}[c]{@{}c@{}}PDR \\
+(\%)\end{tabular}}}} \\ \cline{3-4}
+&                                                                                   & \multicolumn{1}{c|}{\textbf{Avg.
+(sec)}} & \multicolumn{1}{c|}{\textbf{\textless2 min (\%)}}
+& \multicolumn{1}{c|}{}
+\\ \hline \multirow{2}{*}{5}
+& 1                                                                                 & 44.85
+& 90                                                & 31.58
+\\ \cline{2-5}
+& 2                                                                                 & 48
+& 97.3                                              & 77.89
+\\ \hline \multirow{2}{*}{15}
+& 1                                                                                 & 41.71
+& 94.1                                              & 41.75
+\\ \cline{2-5}
+& 2                                                                                 & 24.73
+& 97.3                                              & 77.54
+\\ \hline \multirow{2}{*}{30}
+& 1                                                                               & 14.9
+& 99.6                                              & 81.75
+\\ \cline{2-5}
+& 2                                                                                 & 19.17
+& 98.6                                              & 62.11
+\\ \hline \end{tabular} \end{table}
 
 \begin{table}[]
 \centering
@@ -972,10 +1009,25 @@ relay nodes.
     \centering
     %\includegraphics[trim= 0 150  0 150, clip, width=0.4\textwidth]{Figure1.pdf}
     \includegraphics[trim= 150 200 150 200, clip, width=0.4\textwidth]{figure_barplot.pdf}
-    \caption{Simulation results: (a) average latency and (b) packet delivery ratio (PDR). 
+    \caption{Simulation results: average latency and packet delivery ratio (PDR). 
     R and M denote the number of relay nodes and the mobility type, respectively}
     \label{fig:results_bar}
 \end{figure}
+
+The results from the simulations concerning the latency and the PDR are shown
+in tables \ref{tbl:r6} and \ref{tbl:r12}. From these tables, it is apparent
+that in all but two cases, the latency was less than two minutes for over 90 \%
+of transmitted packets. In contrast, the PDR statistics are more diverse, with
+five out of twelwe simulations showing results below the requirement target.
+
+The results are plotted in a bar diagram (Fig.  \ref{fig:results_bar}) to
+illustrate how the results vary with respect to the different parameters.
+Looking at the average latency, the network seems to scale well with an
+increasing ammount of sensor nodes and it appears that the network is well
+optimized for 30 sensor nodes. At the same time the latency appears to be lower
+for 6 relay nodes compared to twelwe relay nodes.  For the PDR the results are
+more mixed, but in general, the highest PDR is acheived with 30 sensor nodes
+and 12 relay nodes.
 
 From the powertrace tool, we can estimate the average current consumption of
 the sensor node.  In our simulations we obtained an average current consumption
@@ -989,19 +1041,50 @@ Eq.~\ref{eq:lifetime}:
 T = \frac{C_{battery}}{I_{SN}}
 \end{equation}
 
-With this calculation we obtain an expected average lifetime of approx. 112 days. This value, 
-however, should be treated carefully and no final conclusion should be drawn
-from it. First of all this is only a simulation based estimation, in which we
-increased the sampling frequency of data generation. In addition, the use of
-this tool requires more CPU usages which leads to higher consumption. On the
-other hand, though, we haven't included the current consumption of real sensors
-into the estimation. 
+With this calculation we obtain an expected average lifetime of approx. 112
+days.
 
 \subsection{Discussion} \label{sec:discussion}
 
+Because the simulations were not run for five hours, and the fivefold increase
+in sensor packet generation does not equate to five hours' worth of sensor
+data, we cannot completely determine if the PDR requirement was fulfilled or
+not. In fact, as the results show that once sensor nodes were inside coverage,
+they were successfully able to deliver their packets to the base station, it is
+evident that the PDR is highly dependent on the mobility of the cows.
+
+In addition, the average expected lifetime should be treated carefully and no
+final conclusion should be drawn from it. First of all this is only
+a simulation based estimation, in which we increased the sampling frequency of
+data generation. Also, the use of this tool requires more CPU usages which
+leads to higher consumption. On the other hand, though, we haven't included the
+current consumption of real sensors into the estimation.
+
+Another consideration is that there are several parameters that could be
+tweaked to potentially increase the performance of the network. Firstly
+changing the timeout timers for sending aggregated packets could be possibly
+decrease the average end-to-end latency. Secondly, changing the timers of the
+sleeping times when a sensor node is out of coverage could also reduce the
+energy consumption.
+
+As the simulation does not take into account fading effects, the energy
+consumption of sensors, and sensor data processing, real life experiments are
+needed to fully evaluate the performance of the network. Real life experiments
+can also show the effects of interference, though this is probably less
+important, as there is most likely not many users of competing bands in
+a typical cattle field.
+
+Taking into account the unreliability of the PDR results, it is not wise to
+draw definite conclusions on how many relay nodes should be used. It is also
+possible that there are other relay node layouts that give a better
+performance.
+
 \section{Conclusion}
 
-\section{Future Work}
+Our simulations shows that the proposed design results in a correctly
+functioning network with an acceptable latency. However, further tests along
+with real life experiments are needed to fully evaluate the number of relay
+nodes needed, and the PDR- and energy usage requirements.
 
 %\section{Work Plan}
 
