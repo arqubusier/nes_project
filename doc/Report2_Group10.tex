@@ -299,7 +299,8 @@
 % not capitalized unless they are the first or last word of the title.
 % Linebreaks \\ can be used within to get better formatting as desired.
 % Do not put math or special symbols in the title.
-\title{WSN for Cattle Monitoring -- Related Work and Design Proposal}
+
+\title{A WSN System for Cattle Monitoring -- Implementation and Evaluation}
 
 % author names and affiliations
 % use a multiple column layout for up to three different
@@ -369,14 +370,14 @@ Email: o.a.m.elshal@student.tue.nl}}
 
 The livestock industry constitutes a considerable part of the world’s economy.
 In fact, it generates around \euro{} 8.6 billion every year in the Netherlands
-alone~\cite{nedgov}. At the same time, there is a clear trend of automation in
-this sector that aims to increase the efficiency and decrease the amount of
-human labour.
+alone~\cite{nedgov}. In addition, there is a clear trend of automation in this
+sector that aims to increase the efficiency and decrease the amount of human
+labour.
 
-However, one of the major costs for the farmers in this field is due to the
-diseases contracted by their animals. By developing a system that could detect
-such diseases, and other abnormal behavior, one could potentially reduce this
-cost by a great amount.  
+However, this sector is not without its problems. One of the major costs for
+the farmers in this field is due to the diseases contracted by their animals.
+By developing a system that could detect such diseases, and other abnormal
+behavior, one could potentially reduce this cost by a great amount.  
 
 
 \subsection{Application Description}
@@ -778,8 +779,9 @@ the nearest relay node.
 
 According to an experiment performed in an outdoor environment, the average
 propagation path loss at 60 m for a link between two Telos B Nodes was
-estimated to be 92.3 dB. Using this value, along with 0 dBm, the maximum
-transmission power of the Telos B node, in the path propagation loss formula:
+estimated to be 92.3 dB~\cite{pathloss}. Using this value, along with 0 dBm,
+the maximum transmission power of the Telos B node, in the path propagation
+loss formula:
 
 \begin{displaymath}
     P_{r}[dBm] = P_{t}[dBm] - P_{L}[dB]
@@ -794,12 +796,12 @@ simulation.
 \subsection{MAC Layer}
 
 For the MAC layer, there are two modes to be used in the IEEE 802.15.4
-standard: nonbeacon-enabled mode and beacon-enabled mode. In the former
-a unslotted CSMA/CA mechanism is used. In the latter one, a more elaborate
-scheme is used, wherein special nodes of the network, called coordinators,
-regularly send out beacons to synchronize with the nodes they are associated
-with. The period between two beacons is called a superframe, and within this
-the nodes use a slotted CSMA/CA mechanism.
+standard: nonbeacon-enabled mode and beacon-enabled mode~\cite{ieee802154}. In
+the former a unslotted CSMA/CA mechanism is used. In the latter one, a more
+elaborate scheme is used, wherein special nodes of the network, called
+coordinators, regularly send out beacons to synchronize with the nodes they are
+associated with. The period between two beacons is called a superframe, and
+within this the nodes use a slotted CSMA/CA mechanism.
 
 Because of the need for synchronization, the beacon-enabled mode might cause
 problems if a sensor node moves out of the coverage of a coordinator for
@@ -1275,6 +1277,14 @@ E. S. Nadimi, R. N. Jørgensen, V. Blanes-Vidal, and S. Christensen, \emph{Monit
 \bibitem{AS13WI}
 M. Asikainen, K. Haataja, and P. Toivanen, \emph{Wireless indoor tracking of livestock for behavioral analysis,} in Wireless Communications and Mobile Computing Conference (IWCMC), 2013 9th International, 2013, pp. 1833–1838.
 
+\bibitem{eurostat}
+    Livestock Density Index
+    - http://ec.europa.eu/eurostat/tgm/table.do?tab=table\&init=1\&language=en\&pcode=tsdpc450\&plugin=1
+    
+\bibitem{milkproduction}
+    Cow comfort: 9) Resting -
+    http://www.milkproduction.com/Library/Scientific-articles/Housing/Cow-comfort-9/
+
 \bibitem{wikibov} 
 https://en.wikivet.net/Bovine\_Physiology\_-\_WikiNormals, taken 12:30 22 sep
 2015 
@@ -1288,37 +1298,36 @@ jun,
 2011,
 pages 110--117,
 
+\bibitem{powertrace} A. Dunkels, J. Eriksson, N. Finne and N. Tsiftes,
+    \emph{Powertrace: Network-level Power Profiling for Low-power Wireless
+    Networks.}, Swedish Institute of Computer Science, Technical Report, March
+    2011.
+    
+\bibitem{pathloss} N. Scholastica Ukamaka, G. N. Onoh, V. E. Idigo, A. O.
+    Azubogu, \emph{Experimental Characterization of WSN propagation in Outdoor
+    Environment (using TelosB Sensor Nodes).}, International Journal of
+    Advanced Research in Computer and Communication Engineering Vol. 2, Issue
+    6, jun, 2013, page 2331.
+
+
 \bibitem{ieee802154}
 IEEE Computer Society, LAN/MAN Standards Committee, Institute of Electrical
 and Electronics Engineers and IEEE-SA Standards Board, \emph{IEEE standard
 for local and metropolitan area networks. Part 15.4}, isbn
 978-0-7381-6684-1, Institute of Electrical and Electronics Engineers, 2011,
 
-\bibitem{ContikiMacProt}
-	MAC Protcols in Contiki - http://anrg.usc.edu/contiki/index.php/MAC\_protocols\_in\_ContikiOS
-
 \bibitem{ContikiDutyCycling}
 	A. ~Dunkels, \emph{The ContikiMAC Radio Duty Cycling Protocol.}, SICS Technical Report, December 2011.
 
-\bibitem{powertrace}
-    A. Dunkels, J. Eriksson, N. Finne and N. Tsiftes, \emph{Powertrace: Network-level Power 
-    Profiling for Low-power Wireless Networks.}, Swedish Institute of Computer Science, 
-    Technical Report, March 2011.
-    
-\bibitem{EnergizerBattery}
-	Energizer E91 Product Datasheet - http://data.energizer.com/PDFs/E91.pdf
+\bibitem{ContikiMacProt}
+	MAC Protcols in Contiki - http://anrg.usc.edu/contiki/index.php/MAC\_protocols\_in\_ContikiOS
 
-\bibitem{eurostat}
-    Livestock Density Index
-    - http://ec.europa.eu/eurostat/tgm/table.do?tab=table\&init=1\&language=en\&pcode=tsdpc450\&plugin=1
-    
-\bibitem{milkproduction}
-    Cow comfort: 9) Resting -
-    http://www.milkproduction.com/Library/Scientific-articles/Housing/Cow-comfort-9/
+\bibitem{EnergizerBattery} Energizer E91 Product Datasheet
+    - http://data.energizer.com/PDFs/E91.pdf
 
-%citation format
-    %H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
-  %0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
+%citation format %H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX},
+%    3rd~ed.\hskip 1em plus %0.5em minus 0.4em\relax Harlow, England:
+%    Addison-Wesley, 1999.
 
 \end{thebibliography}
 
